@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import type { LatLngExpression, Map as LeafletMap, TileLayer } from 'leaflet';

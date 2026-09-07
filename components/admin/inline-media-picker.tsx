@@ -1,31 +1,28 @@
 "use client";
 
-import { Download, FileVideo, LoaderCircle, Upload } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Download, FileVideo, Image as ImageIcon, LoaderCircle, Plus, Trash2, Upload, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import type { MediaAsset } from "@/lib/cms-types";
 
-export default function InlineMediaPicker({ media, selectedIds, onChange, reload, setMessage, label = "Photos & video" }: { media: MediaAsset[]; selectedIds: string[]; onChange: (ids: string[]) => void; reload: () => void | Promise<void>; setMessage: (message: string) => void; label?: string }) {
-  const [uploading, setUploading] = useState(false);
-  const active = media.filter((asset) => asset.status === "active");
-  const upload = async (files: FileList | null) => {
-    if (!files?.length) return; setUploading(true);
-    try {
-      const uploaded: string[] = [];
-      for (const file of Array.from(files)) {
-        const form = new FormData(); form.append("file", file);
-        const response = await fetch("/api/admin/media", { method: "POST", body: form }); const body = await response.json();
-        if (!response.ok) throw new Error(body.error || `Could not upload ${file.name}`); uploaded.push(body.media.id);
-      }
-      onChange([...new Set([...selectedIds, ...uploaded])]); await reload(); setMessage(`${files.length} media file${files.length === 1 ? "" : "s"} uploaded and attached.`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Upload failed."); }
-    finally { setUploading(false); }
-  };
-  return <section className="inline-media-picker">
-    <div className="inline-media-title"><div><p className="admin-kicker">Media for this entry</p><h3>{label}</h3><span>Upload here, choose existing files, or download the original. Selected media appears on the public page.</span></div><label className="inline-upload"><input type="file" multiple accept="image/*,video/*" onChange={(event) => upload(event.target.files)}/>{uploading ? <LoaderCircle className="spin"/> : <Upload/>}{uploading ? "Uploading…" : "Upload from device"}</label></div>
-    {active.length ? <div className="inline-media-grid">{active.map((asset) => {
-      const selected = selectedIds.includes(asset.id);
-      return <article key={asset.id} className={selected ? "selected" : ""}><label><input type="checkbox" checked={selected} onChange={(event) => onChange(event.target.checked ? [...selectedIds, asset.id] : selectedIds.filter((id) => id !== asset.id))}/>{asset.contentType.startsWith("video/") ? <div className="inline-video"><video src={asset.url} muted preload="metadata"/><FileVideo/></div> : <img src={asset.url} alt={asset.altText || ""}/>}<span>{asset.filename}</span></label><a href={asset.downloadUrl} aria-label={`Download ${asset.filename}`}><Download/>Download</a></article>;
-    })}</div> : <p className="admin-empty">No media yet. Upload the first photo or video for this entry.</p>}
-  </section>;
+type Props = { media:MediaAsset[]; selectedIds:string[]; onChange:(ids:string[])=>void; reload:()=>void|Promise<void>; setMessage:(message:string)=>void; label?:string; coverMediaId?:string; onCoverChange?:(id:string)=>void };
+
+function Preview({asset}:{asset:MediaAsset}) {
+  return asset.contentType.startsWith("video/") ? <div className="inline-video"><video src={asset.url} muted playsInline preload="metadata"/><FileVideo/></div> : <img src={asset.url} alt={asset.altText||""}/>;
 }
 
+export default function InlineMediaPicker({media,selectedIds,onChange,reload,setMessage,label="Photos & video",coverMediaId="",onCoverChange}:Props) {
+  const [uploading,setUploading]=useState(false); const [deleting,setDeleting]=useState("");
+  const active=useMemo(()=>media.filter(asset=>asset.status==="active"),[media]); const byId=useMemo(()=>new Map(active.map(asset=>[asset.id,asset])),[active]);
+  const attached=selectedIds.map(id=>byId.get(id)).filter((asset):asset is MediaAsset=>Boolean(asset)); const available=active.filter(asset=>!selectedIds.includes(asset.id));
+  const upload=async(files:FileList|null)=>{if(!files?.length)return;setUploading(true);try{const uploaded:string[]=[];for(const file of Array.from(files)){const form=new FormData();form.append("file",file);const response=await fetch("/api/admin/media",{method:"POST",body:form});const body=await response.json();if(!response.ok)throw new Error(body.error||`Could not upload ${file.name}`);uploaded.push(body.media.id)}onChange([...new Set([...selectedIds,...uploaded])]);await reload();setMessage(`${files.length} media file${files.length===1?"":"s"} uploaded and attached. Click Save location to keep the change.`)}catch(error){setMessage(error instanceof Error?error.message:"Upload failed.")}finally{setUploading(false)}};
+  const remove=(asset:MediaAsset)=>{onChange(selectedIds.filter(id=>id!==asset.id));if(coverMediaId===asset.id)onCoverChange?.("");setMessage(`${asset.filename} removed from this location. Click Save location to keep the change.`)};
+  const move=(assetId:string,direction:-1|1)=>{const from=selectedIds.indexOf(assetId),to=from+direction;if(from<0||to<0||to>=selectedIds.length)return;const next=[...selectedIds];[next[from],next[to]]=[next[to],next[from]];onChange(next)};
+  const makeCover=(asset:MediaAsset)=>{if(!selectedIds.includes(asset.id))onChange([...selectedIds,asset.id]);onCoverChange?.(asset.id);setMessage(`${asset.filename} selected as the cover. Click Save location to keep the change.`)};
+  const deletePermanently=async(asset:MediaAsset)=>{if(!confirm(`Permanently delete “${asset.filename}” from SANVIC?\n\nThis removes the file from every location and section using it. This cannot be undone.`))return;setDeleting(asset.id);try{const response=await fetch("/api/admin/media",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:asset.id})});const body=await response.json();if(!response.ok)throw new Error(body.error||"Could not delete the media file.");onChange(selectedIds.filter(id=>id!==asset.id));if(coverMediaId===asset.id)onCoverChange?.("");await reload();setMessage(`${asset.filename} was permanently deleted.`)}catch(error){setMessage(error instanceof Error?error.message:"Delete failed.")}finally{setDeleting("")}};
+  return <section className="inline-media-picker">
+    <div className="inline-media-title"><div><p className="admin-kicker">Media for this entry</p><h3>{label}</h3><span>Upload several photos or videos, arrange their public order, and choose a cover. Gallery changes are saved with the location.</span></div><label className="inline-upload"><input type="file" multiple accept="image/*,video/*" onChange={event=>upload(event.target.files)}/>{uploading?<LoaderCircle className="spin"/>:<Upload/>}{uploading?"Uploading…":"Upload from device"}</label></div>
+    <div className="inline-media-section-head"><div><strong>Attached to this location</strong><span>{attached.length} file{attached.length===1?"":"s"} · shown in this order</span></div></div>
+    {attached.length?<div className="inline-media-grid attached">{attached.map((asset,index)=><article key={asset.id} className="selected"><Preview asset={asset}/><div className="inline-media-name"><span>{asset.filename}</span>{coverMediaId===asset.id&&<b><Check/>Cover</b>}</div><div className="inline-media-actions">{onCoverChange&&asset.contentType.startsWith("image/")&&coverMediaId!==asset.id&&<button onClick={()=>makeCover(asset)}><ImageIcon/>Set cover</button>}<button onClick={()=>move(asset.id,-1)} disabled={index===0}><ArrowLeft/>Earlier</button><button onClick={()=>move(asset.id,1)} disabled={index===attached.length-1}>Later<ArrowRight/></button><button className="remove" onClick={()=>remove(asset)}><X/>Remove</button><a href={asset.downloadUrl}><Download/>Download</a><button className="delete" disabled={deleting===asset.id} onClick={()=>deletePermanently(asset)}>{deleting===asset.id?<LoaderCircle className="spin"/>:<Trash2/>}Delete file</button></div></article>)}</div>:<p className="admin-empty inline-empty">No media attached. Upload from this device or add a file from the library below.</p>}
+    {available.length>0&&<><div className="inline-media-section-head library"><div><strong>Available in media library</strong><span>Add an existing file to this location</span></div></div><div className="inline-media-grid available">{available.map(asset=><article key={asset.id}><Preview asset={asset}/><div className="inline-media-name"><span>{asset.filename}</span></div><div className="inline-media-actions"><button className="add" onClick={()=>onChange([...selectedIds,asset.id])}><Plus/>Add</button><a href={asset.downloadUrl}><Download/>Download</a><button className="delete" disabled={deleting===asset.id} onClick={()=>deletePermanently(asset)}>{deleting===asset.id?<LoaderCircle className="spin"/>:<Trash2/>}Delete file</button></div></article>)}</div></>}
+  </section>;
+}

@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Copy, MapPin, Play, Waves } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Copy, ExternalLink, Globe2, MapPin, Phone, Play, Waves } from "lucide-react";
 import type { MediaAsset, Place } from "@/lib/cms-types";
 import { pictures } from "@/lib/sanvic-data";
 import LocationMiniMap from "@/components/location-mini-map";
 
 export function mediaFor(ids: string[] | undefined, media: MediaAsset[]) {
-  const wanted = new Set(ids || []);
-  return media.filter((asset) => wanted.has(asset.id));
+  const byId = new Map(media.map((asset) => [asset.id, asset]));
+  return (ids || []).map((id) => byId.get(id)).filter((asset): asset is MediaAsset => Boolean(asset));
 }
 
 export function MediaGallery({ ids, media, title = "In this story", compact = false }: { ids?: string[]; media: MediaAsset[]; title?: string; compact?: boolean }) {
@@ -43,9 +43,9 @@ export function PlaceDetail({ place, media, onBack, onCommunity }: { place: Plac
   const copyCoordinates = async () => { try { await navigator.clipboard.writeText(`${place.displayLatitude}, ${place.displayLongitude}`); } catch {} };
   return <section className="place-detail view-enter">
     <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || ""}/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button><div><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1><p>{place.description || place.address}</p></div></div>
-    <div className="place-detail-body"><section className="place-location-panel"><LocationMiniMap latitude={place.displayLatitude} longitude={place.displayLongitude} name={place.name}/><div><p className="eyebrow">Location</p><h2>Here in {place.barangay}.</h2><p>{place.address || `${place.barangay}, San Vicente, Palawan`}</p><div className="place-coordinate"><MapPin/><span>{place.displayLatitude.toFixed(5)}° N<br/>{place.displayLongitude.toFixed(5)}° E</span></div><button onClick={copyCoordinates}><Copy/>Copy coordinates</button><button onClick={onCommunity}><Waves/>Explore {place.barangay}</button></div></section>
+    <div className="place-detail-body"><section className="place-profile-data"><div><p className="eyebrow">About this place</p><h2>{place.name}</h2><p>{place.description || `A ${place.type.toLowerCase()} in ${place.barangay}, San Vicente.`}</p></div><dl><div><dt>Category</dt><dd>{place.type}</dd></div><div><dt>Barangay</dt><dd>{place.barangay}</dd></div>{place.address&&<div><dt>Address</dt><dd>{place.address}</dd></div>}{place.verified&&<div><dt>Status</dt><dd><BadgeCheck/>Location verified</dd></div>}</dl></section><section className="place-location-panel"><LocationMiniMap latitude={place.displayLatitude} longitude={place.displayLongitude} name={place.name}/><div><p className="eyebrow">Location</p><h2>Here in {place.barangay}.</h2><p>{place.address || `${place.barangay}, San Vicente, Palawan`}</p><div className="place-coordinate"><MapPin/><span>{place.displayLatitude.toFixed(5)}° N<br/>{place.displayLongitude.toFixed(5)}° E</span></div><button onClick={copyCoordinates}><Copy/>Copy coordinates</button><button onClick={onCommunity}><Waves/>Explore {place.barangay}</button></div></section>
       <MediaGallery ids={place.photoIds} media={media} title={`See ${place.name}`}/>
-      {(place.phone || place.website || place.bookingUrl) && <section className="place-contact"><p className="eyebrow">Plan your visit</p><h2>Details from the host.</h2>{place.phone&&<p>{place.phone}</p>}{place.website&&<p>{place.website.replace(/^https?:\/\//, "")}</p>}{place.bookingUrl&&<a href={place.bookingUrl} target="_blank" rel="noreferrer">Contact or book<ArrowRight/></a>}</section>}
+      {(place.phone || place.website || place.bookingUrl) && <section className="place-contact"><p className="eyebrow">Plan your visit</p><h2>Details from the host.</h2><div className="place-contact-links">{place.phone&&<a href={`tel:${place.phone.replace(/[^+\d]/g,"")}`}><Phone/><span><small>Phone</small>{place.phone}</span></a>}{place.website&&<a href={place.website} target="_blank" rel="noreferrer"><Globe2/><span><small>Website</small>{place.website.replace(/^https?:\/\//,"").replace(/\/$/,"")}</span><ExternalLink/></a>}{place.bookingUrl&&<a href={place.bookingUrl} target="_blank" rel="noreferrer"><MapPin/><span><small>Contact or booking</small>Open booking page</span><ArrowRight/></a>}</div></section>}
     </div>
   </section>;
 }

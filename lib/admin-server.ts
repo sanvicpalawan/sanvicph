@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabase-admin";
 import { baiaSeed, copySeed, itemSeed } from "./admin-seed";
+import { treKmzSeed } from "./kmz-seed";
 
 export const SESSION_COOKIE = "sanvic_admin";
 
@@ -59,6 +60,46 @@ export async function seedDefaults() {
     status: baiaSeed.status, featured: true, verified: true, sort_order: 0,
     created_at: now, updated_at: now,
   }], { onConflict: "id", ignoreDuplicates: true });
+
+  const kmzSeedKey = "tre-san-vicente-palawan-v1";
+  const { data: kmzSeeded } = await db.from("audit_log")
+    .select("id")
+    .eq("entity_type", "seed")
+    .eq("entity_id", kmzSeedKey)
+    .limit(1)
+    .maybeSingle();
+  if (!kmzSeeded) {
+    const kmzRows = treKmzSeed.map((location) => ({
+      id: location.id,
+      name: location.name,
+      type: location.type,
+      barangay: location.barangay,
+      google_maps_url: "",
+      google_place_id: "",
+      source_latitude: location.latitude,
+      source_longitude: location.longitude,
+      display_latitude: location.latitude,
+      display_longitude: location.longitude,
+      address: "",
+      phone: "",
+      website: "",
+      description: location.description,
+      booking_url: "",
+      cover_media_id: "",
+      photo_ids_json: [],
+      status: "draft",
+      featured: false,
+      verified: false,
+      sort_order: 0,
+      created_at: now,
+      updated_at: now,
+    }));
+    for (let index = 0; index < kmzRows.length; index += 100) {
+      const { error } = await db.from("places").upsert(kmzRows.slice(index, index + 100), { onConflict: "id", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    await audit("seed", "seed", kmzSeedKey, `Loaded ${kmzRows.length} KMZ locations as Draft for admin review`);
+  }
 }
 
 export async function audit(action: string, entityType: string, entityId: string, summary: string) {
