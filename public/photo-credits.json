@@ -1,0 +1,140 @@
+[
+  {
+    "file": "hero-port-barton.webp",
+    "role": "Preferred hero / island coast",
+    "author": "Geio Tischler",
+    "location": "Port Barton, San Vicente, Palawan, Philippines",
+    "source_url": "https://unsplash.com/photos/an-aerial-view-of-an-island-in-the-ocean-ZAas8-4r5YY",
+    "image_url": "https://images.unsplash.com/photo-1728042743682-d1dd205464af?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Verified location; suitable for destination hero."
+  },
+  {
+    "file": "hero-coconut-beach.webp",
+    "role": "Alternate hero / aerial palms",
+    "author": "Mario von Rotz",
+    "location": "Coconut Beach, Port Barton, San Vicente, Palawan, Philippines",
+    "source_url": "https://unsplash.com/photos/an-aerial-view-of-a-beach-with-palm-trees-xVa6avyi_y8",
+    "image_url": "https://images.unsplash.com/photo-1698683080637-9991c63c887b?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Verified location. Portrait image; use lower-middle crop for landscape."
+  },
+  {
+    "file": "kayak-palawan.webp",
+    "role": "Kayaking / island hopping",
+    "author": "Roman Lezhnin",
+    "location": "El Nido, Palawan, Philippines",
+    "source_url": "https://unsplash.com/photos/kayakers-explore-a-turquoise-lagoon-between-cliffs-NpqPdJBYGFY",
+    "image_url": "https://images.unsplash.com/photo-1746260948447-c06796c0a901?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Representative Palawan activity photo, not exact San Vicente tour."
+  },
+  {
+    "file": "seafood-philippines.webp",
+    "role": "Local food category",
+    "author": "Eiliv Aceron",
+    "location": "Quezon City, Philippines",
+    "source_url": "https://unsplash.com/photos/seafood-dish-in-white-plate-G5hv3yBdmzQ",
+    "image_url": "https://images.unsplash.com/photo-1539124232514-3ad6c6da22a7?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Representative Filipino seafood; not a specific local restaurant dish."
+  },
+  {
+    "file": "sunset-port-barton.webp",
+    "role": "Sunset / beach",
+    "author": "Rogel Tura",
+    "location": "Port Barton, San Vicente, Palawan, Philippines",
+    "source_url": "https://unsplash.com/photos/people-enjoying-sunset-on-a-beautiful-beach-sONgqzUMIjc",
+    "image_url": "https://images.unsplash.com/photo-1630192193142-dadb5edc3315?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Verified local sunset photograph."
+  },
+  {
+    "file": "tropical-lodge.webp",
+    "role": "Stays / tropical lodge",
+    "author": "Rodrigo Rodrigues | WOLF ART",
+    "location": "Unspecified tropical location",
+    "source_url": "https://unsplash.com/photos/tropical-bungalow-surrounded-by-palm-trees-and-lush-greenery-2Pb7tDiiOhk",
+    "image_url": "https://images.unsplash.com/photo-1774815172431-4839cfceac00?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Representative lodging imagery; not any named San Vicente property."
+  },
+  {
+    "file": "live-music.webp",
+    "role": "Events / live music",
+    "author": "Austin",
+    "location": "Unspecified",
+    "source_url": "https://unsplash.com/photos/a-band-performs-live-music-outdoors-at-night-3FzH5Ueq_HA",
+    "image_url": "https://images.unsplash.com/photo-1735713212111-e39b9cbcdbea?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Representative live music imagery; not an actual local scheduled event."
+  },
+  {
+    "file": "surf.webp",
+    "role": "Surf category",
+    "author": "James Donaldson",
+    "location": "Kepulauan Mentawai, Indonesia",
+    "source_url": "https://unsplash.com/photos/person-surfboarding-on-huge-wave-during-daytime-OZ3o43kCFo0",
+    "image_url": "https://images.unsplash.com/photo-1504682066999-90437076f0dd?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Representative tropical surfing imagery; not San Vicente surf conditions."
+  },
+  {
+    "file": "transfer-van.webp",
+    "role": "Transfers category",
+    "author": "Kenneth Sonntag",
+    "location": "Callignee, Victoria, Australia",
+    "source_url": "https://unsplash.com/photos/a-van-parked-on-top-of-a-dirt-road-lGOAzV8s_ko",
+    "image_url": "https://images.unsplash.com/photo-1678747172256-b37b7ac99cfc?auto=format&fit=crop&w=1600&q=84",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "reuse": "Source photo page states Free to use under the Unsplash License. Attribution appreciated; no blanket claim of third-party releases.",
+    "note": "Toyota Hiace vehicle illustration; not the actual transfer operator vehicle."
+  },
+  {
+    "file": "avatar-1.webp",
+    "role": "Illustrative avatar",
+    "author": "Michael Dam",
+    "source_url": "https://unsplash.com/photos/closeup-photography-of-woman-smiling-mEZ3PoFGs_k",
+    "image_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?fit=crop&crop=faces&w=96&h=96&fm=webp&q=85",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "note": "Real photographic portrait used as a decorative sample avatar. Does not identify an actual user or traveler."
+  },
+  {
+    "file": "avatar-2.webp",
+    "role": "Illustrative avatar",
+    "author": "Joshua katt",
+    "source_url": "https://unsplash.com/photos/a-smiling-man-poses-against-a-blue-sky-BfwaTm2igCs",
+    "image_url": "https://images.unsplash.com/photo-1744009549303-27a4a137031c?fit=crop&crop=faces&w=96&h=96&fm=webp&q=85",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "note": "Real photographic portrait used as a decorative sample avatar. Does not identify an actual user or traveler."
+  },
+  {
+    "file": "avatar-3.webp",
+    "role": "Illustrative avatar",
+    "author": "Baylee Gramling",
+    "source_url": "https://unsplash.com/photos/smiling-woman-during-day-RnHhR_sip7M",
+    "image_url": "https://images.unsplash.com/photo-1552334949-51934e5f2d38?fit=crop&crop=faces&w=96&h=96&fm=webp&q=85",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "note": "Real photographic portrait used as a decorative sample avatar. Does not identify an actual user or traveler."
+  }
+]

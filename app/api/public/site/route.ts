@@ -1,0 +1,27 @@
+import { json, seedDefaults } from "@/lib/admin-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+
+type Row = Record<string, unknown>;
+
+export async function GET() {
+  try {
+    const db = supabaseAdmin();
+    const { data: exists } = await db.from("site_content").select("key").limit(1).maybeSingle();
+    if (!exists) await seedDefaults();
+
+    const [content, items, places, media] = await Promise.all([
+      db.from("site_content").select("key, published_value").order("sort_order"),
+      db.from("content_items").select("kind, data_json").eq("status", "published").order("kind").order("sort_order"),
+      db.from("places").select("*").eq("status", "published").order("featured", { ascending: false }).order("sort_order").order("name"),
+      db.from("media").select("id, filename, content_type, size_bytes, caption, alt_text, status, created_at").eq("status", "active").order("created_at", { ascending: false }),
+    ]);
+    for (const r of [content, items, places, media]) if (r.error) return json({ error: r.error.message }, 500);
+
+    const copy = Object.fromEntries((content.data ?? []).map((r: Row) => [String(r.key), String(r.published_value)]));
+    const byKind = (kind: string) => (items.data ?? []).filter((r: Row) => r.kind === kind).map((r: Row) => r.data_json);
+    const publicPlaces = (places.data ?? []).map((r: Row) => ({ id:r.id,name:r.name,type:r.type,barangay:r.barangay,googleMapsUrl:r.google_maps_url,googlePlaceId:r.google_place_id,sourceLatitude:r.source_latitude,sourceLongitude:r.source_longitude,displayLatitude:r.display_latitude,displayLongitude:r.display_longitude,address:r.address,phone:r.phone,website:r.website,description:r.description,bookingUrl:r.booking_url,coverMediaId:r.cover_media_id,photoIds:r.photo_ids_json,status:r.status,featured:Boolean(r.featured),verified:Boolean(r.verified),sortOrder:r.sort_order }));
+    const publicMedia = (media.data ?? []).map((r: Row) => ({ id:r.id,filename:r.filename,contentType:r.content_type,sizeBytes:r.size_bytes,caption:r.caption,altText:r.alt_text,status:r.status,createdAt:r.created_at,url:`/api/media/${r.id}`,downloadUrl:`/api/media/${r.id}?download=1` }));
+
+    return json({ copy, communities: byKind("community"), categories: byKind("category"), opportunities: byKind("opportunity"), badges: byKind("badge"), places: publicPlaces, media: publicMedia }, 200, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" });
+  } catch (error) { return json({ error: error instanceof Error ? error.message : "Content unavailable" }, 500); }
+}
