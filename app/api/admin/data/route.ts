@@ -1,4 +1,4 @@
-import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
+﻿import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type Row = Record<string, unknown>;
@@ -24,7 +24,8 @@ export async function GET(request: Request) {
     ]);
     for (const r of [content, items, places, media, log]) if (r.error) return json({ error: r.error.message }, 500);
 
-    const sortedPlaces = [...(places.data ?? [])].sort((a, b) => statusRank(a.status) - statusRank(b.status));
+    const sortedPlaces = [...(places.data ?? [])] as Row[];
+    sortedPlaces.sort((a, b) => statusRank(a.status) - statusRank(b.status));
 
     return json({
       content: (content.data ?? []).map(contentRow),
