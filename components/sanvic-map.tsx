@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Map as LeafletMap, TileLayer } from 'leaflet';
-import { Compass, Layers3, LocateFixed, Minus, Plus } from 'lucide-react';
+import type { LatLngExpression, Map as LeafletMap, TileLayer } from 'leaflet';
+import { Compass, Layers3, LocateFixed, MapPinned, Minus, Plus } from 'lucide-react';
 import type { Community } from '@/lib/sanvic-data';
 import type { Place } from '@/lib/cms-types';
 
@@ -18,8 +18,10 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
   const tilesRef = useRef<Record<Basemap, TileLayer> | null>(null);
   const callbacks = useRef({ active, activePlace, onSelect, onPlaceSelect, communities, places });
   const redraw = useRef<() => void>(() => {});
+  const locateUser = useRef<() => void>(() => {});
   const [basemap, setBasemap] = useState<Basemap>('satellite');
   const [ready, setReady] = useState(false);
+  const [locationState, setLocationState] = useState<'idle'|'locating'|'tracking'|'error'>('idle');
 
   useEffect(() => { callbacks.current = { active, activePlace, onSelect, onPlaceSelect, communities, places }; redraw.current(); }, [active, activePlace, onSelect, onPlaceSelect, communities, places]);
 
@@ -37,7 +39,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
       const tiles: Record<Basemap, TileLayer> = {
         street: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }),
         dark: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { className: 'dark-map-tiles', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }),
-        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, Vantor, Earthstar Geographics, GIS Community' }),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, maxNativeZoom: 17, attribution: 'Esri, Vantor, Earthstar Geographics, GIS Community' }),
       };
       tiles.satellite.addTo(map);
       tilesRef.current = tiles;
@@ -53,6 +55,24 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
         iconCreateFunction: (cluster) => L.divIcon({ className: 'sanvic-cluster', html: `<span>${cluster.getChildCount()}</span>`, iconSize: [38, 38] }),
       }).addTo(map);
       let boundaries: ReturnType<typeof L.geoJSON> | null = null;
+      let userMarker: ReturnType<typeof L.marker> | null = null; let accuracyCircle: ReturnType<typeof L.circle> | null = null; let watchId:number|null = null;
+
+      locateUser.current = () => {
+        if (!navigator.geolocation) { setLocationState('error'); return; }
+        if (userMarker) { map.flyTo(userMarker.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.4 }); return; }
+        if (watchId !== null) return;
+        setLocationState('locating');
+        watchId = navigator.geolocation.watchPosition(({coords}) => {
+          const point:LatLngExpression = [coords.latitude, coords.longitude];
+          if (!userMarker) {
+            const icon=L.divIcon({className:'sanvic-user-marker',html:'<span><i></i></span>',iconSize:[30,30],iconAnchor:[15,15]});
+            userMarker=L.marker(point,{icon,keyboard:false,interactive:true,zIndexOffset:1000,title:'You are here'}).bindTooltip('You are here',{direction:'top',offset:[0,-12],className:'sanvic-location-tooltip'}).addTo(map);
+            accuracyCircle=L.circle(point,{radius:coords.accuracy,color:'#fff7e8',weight:1,opacity:.65,fillColor:'#4c9f86',fillOpacity:.14,interactive:false}).addTo(map);
+            map.flyTo(point,Math.max(map.getZoom(),15),{duration:.45});
+          } else { userMarker.setLatLng(point); accuracyCircle?.setLatLng(point).setRadius(coords.accuracy); }
+          setLocationState('tracking');
+        },()=>{watchId=null;setLocationState('error')},{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+      };
 
       const draw = () => {
         const current = callbacks.current;
@@ -84,7 +104,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
       const scaleLabels = () => host.current?.classList.toggle('palawan-scale', map.getZoom() < 8.25);
       map.on('zoomend', scaleLabels); scaleLabels(); draw();
       mapRef.current = map; setReady(true);
-      cleanup = () => { redraw.current = () => {}; map.remove(); mapRef.current = null; tilesRef.current = null; };
+      cleanup = () => { if(watchId!==null)navigator.geolocation.clearWatch(watchId);locateUser.current=()=>{};redraw.current = () => {}; map.remove(); mapRef.current = null; tilesRef.current = null; };
     })();
     return () => { cancelled = true; cleanup(); };
   }, []);
@@ -107,7 +127,8 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
   return <section className="explorer view-enter" aria-label="Municipality Explorer">
     <div className="map-canvas" ref={host}/>
     <div className="map-layer-switch" role="group" aria-label="Map appearance"><span><Layers3/>Map</span>{(['street', 'dark', 'satellite'] as Basemap[]).map((mode) => <button key={mode} className={basemap === mode ? 'active' : ''} onClick={() => setBasemap(mode)} aria-pressed={basemap === mode}>{mode[0].toUpperCase() + mode.slice(1)}</button>)}</div>
-    <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className="icon-button" onClick={resetSanVicente} aria-label="Return to San Vicente"><LocateFixed/></button></div>
+    <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className={`icon-button map-user-location ${locationState==='tracking'?'active':''}`} onClick={()=>locateUser.current()} aria-label={locationState==='tracking'?'Center map on your location':'Show your location'} aria-pressed={locationState==='tracking'}><LocateFixed/></button><button className="icon-button" onClick={resetSanVicente} aria-label="Return to San Vicente"><MapPinned/></button></div>
+    {locationState==='locating'&&<div className="map-location-status">Finding your location…</div>}{locationState==='error'&&<div className="map-location-status error">Location unavailable. Allow location access and try again.</div>}
     <button className="palawan-view" onClick={showPalawan}><Compass/>View all Palawan</button>
     <div className="community-rail"><div className="rail-handle"/><div className="rail-title"><p className="eyebrow">San Vicente communities</p><span>{places.length} locations</span></div><nav aria-label="Coastal communities">{communities.map((community) => <button key={community.id} className={active?.id === community.id ? 'active' : ''} onClick={() => onSelect(community)}><span>{community.name}</span></button>)}</nav></div>
   </section>;

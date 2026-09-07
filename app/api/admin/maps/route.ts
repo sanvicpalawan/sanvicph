@@ -1,8 +1,11 @@
-import { cleanText, json, requireAdmin } from "@/lib/admin-server";
+﻿import { cleanText, json, requireAdmin } from "@/lib/admin-server";
 
 function extractCoordinates(value: string) {
   const decoded = decodeURIComponent(value);
-  const patterns = [/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/, /[?&](?:q|query|ll|center)=(-?\d{1,3}\.\d+)[,%2C\s]+(-?\d{1,3}\.\d+)/i, /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/];
+  // Order matters: !3d!4d is Google's precise pin location. @lat,lng is only the
+  // map viewport center at share-time, which can drift from the actual pin if
+  // the map was panned — so it must be tried last, not first.
+  const patterns = [/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/, /[?&](?:q|query|ll|center)=(-?\d{1,3}\.\d+)[,%2C\s]+(-?\d{1,3}\.\d+)/i, /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/];
   for (const pattern of patterns) { const match = decoded.match(pattern); if (match) return { latitude: Number(match[1]), longitude: Number(match[2]) }; }
   return null;
 }
@@ -32,4 +35,3 @@ export async function POST(request: Request) {
     });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Unable to inspect this Maps link." }, 500); }
 }
-

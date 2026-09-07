@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef } from 'react';
 import type { Map as LeafletMap, Marker } from 'leaflet';
@@ -20,7 +20,7 @@ export default function LocationMapEditor({ latitude, longitude, onChange }: { l
       const leaflet = await import('leaflet'); const L = leaflet.default; if (cancelled || !host.current) return;
       const map = L.map(host.current, { center: [latitude, longitude], zoom: 14, zoomControl: true, attributionControl: true, maxBounds: PALAWAN_BOUNDS, maxBoundsViscosity: 1, minZoom: 6, maxZoom: 19 });
       map.attributionControl.setPrefix(false);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, Vantor, Earthstar Geographics, GIS Community' }).addTo(map);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, maxNativeZoom: 17, attribution: 'Esri, Vantor, Earthstar Geographics, GIS Community' }).addTo(map);
       const icon = L.divIcon({ className: 'admin-map-marker', html: '<span></span>', iconSize: [34, 42], iconAnchor: [17, 40] });
       const marker = L.marker([latitude, longitude], { icon, draggable: true, keyboard: true, title: 'Drag to correct the SANVIC marker' }).addTo(map);
       marker.on('dragend', () => { const point = marker.getLatLng(); changeRef.current(Number(point.lat.toFixed(6)), Number(point.lng.toFixed(6))); });
