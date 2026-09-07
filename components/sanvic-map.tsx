@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap, TileLayer } from 'leaflet';
@@ -62,7 +62,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
           label.on('click', () => current.onSelect(community));
           communityLabels.addLayer(label);
         });
-        if (boundaries) boundaries.setStyle((feature) => ({ color: feature?.properties?.name === current.active?.boundary ? '#8fd0b3' : '#c3a474', weight: feature?.properties?.name === current.active?.boundary ? 2 : 1, opacity: feature?.properties?.name === current.active?.boundary ? 0.9 : 0.48, fillColor: '#348d70', fillOpacity: feature?.properties?.name === current.active?.boundary ? 0.2 : 0.025 }));
+        if (boundaries) boundaries.setStyle((feature) => { const name = (feature?.properties as { name?: string } | undefined)?.name; return { color: name === current.active?.boundary ? '#8fd0b3' : '#c3a474', weight: name === current.active?.boundary ? 2 : 1, opacity: name === current.active?.boundary ? 0.9 : 0.48, fillColor: '#348d70', fillOpacity: name === current.active?.boundary ? 0.2 : 0.025 }; });
         locationClusters.clearLayers();
         current.places.forEach((place) => {
           const selected = place.id === current.activePlace?.id;
