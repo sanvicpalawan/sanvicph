@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       items: (items.data ?? []).map(itemRow),
       places: sortedPlaces.map(placeRow),
       media: (media.data ?? []).map(mediaRow),
+      imports: [],
       audit: log.data ?? [],
     });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Unable to load admin data." }, 500); }
@@ -92,6 +93,28 @@ export async function PUT(request: Request) {
       return json({ ok: true, id });
     }
 
+    if (payload.resource === "place_status") {
+      const id = cleanText(record.id, 120); const published = record.published === true;
+      if (!id) return json({ error: "Location id is required." }, 400);
+      const { data: place, error: findError } = await db
+        .from("places")
+        .select("name, barangay, display_latitude, display_longitude")
+        .eq("id", id)
+        .neq("status", "archived")
+        .limit(1)
+        .maybeSingle();
+      if (findError) return json({ error: findError.message }, 500);
+      if (!place) return json({ error: "Location not found." }, 404);
+      if (published && (!cleanText(place.barangay, 80) || place.barangay === "Unassigned" || !Number.isFinite(Number(place.display_latitude)) || !Number.isFinite(Number(place.display_longitude)))) {
+        return json({ error: "Confirm the barangay and map marker before publishing." }, 400);
+      }
+      const status = published ? "published" : "draft";
+      const { error } = await db.from("places").update({ status, updated_at: now }).eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      await audit(published ? "publish" : "unpublish", "place", id, `${published ? "Published" : "Removed"} ${cleanText(place.name, 180)} ${published ? "to" : "from"} Explore`);
+      return json({ ok: true, status });
+    }
+
     if (payload.resource === "media") {
       const id = cleanText(record.id, 120); if (!id) return json({ error: "Media id is required." }, 400);
       const { error } = await db.from("media").update({ caption: cleanText(record.caption, 500), alt_text: cleanText(record.altText, 500) }).eq("id", id);
@@ -107,8 +130,18 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     if (!await requireAdmin(request)) return json({ error: "Unauthorized" }, 401);
-    const { resource, id } = await request.json() as { resource?: string; id?: string };
+    const { resource, id, permanent } = await request.json() as { resource?: string; id?: string; permanent?: boolean };
     const safeId = cleanText(id, 120); if (!safeId) return json({ error: "Id is required." }, 400);
+    if (resource === "place" && permanent === true) {
+      const db = supabaseAdmin();
+      const { data: place, error: findError } = await db.from("places").select("name").eq("id", safeId).limit(1).maybeSingle();
+      if (findError) return json({ error: findError.message }, 500);
+      if (!place) return json({ error: "Location not found." }, 404);
+      const { error } = await db.from("places").delete().eq("id", safeId);
+      if (error) return json({ error: error.message }, 500);
+      await audit("delete", "place", safeId, `Permanently deleted ${cleanText(place.name, 180)}`);
+      return json({ ok: true });
+    }
     const table = resource === "place" ? "places" : resource === "item" ? "content_items" : resource === "media" ? "media" : "";
     if (!table) return json({ error: "Unknown resource." }, 400);
     const { error } = await supabaseAdmin().from(table).update({ status: "archived" }).eq("id", safeId);

@@ -20,6 +20,11 @@ export type Place = {
   bookingUrl: string;
   coverMediaId: string;
   photoIds: string[];
+  importBatchId?: string;
+  importSourceKey?: string | null;
+  sourceRecordId?: string;
+  sourceFolder?: string;
+  importWarnings?: string[];
   status: "draft" | "published" | "archived";
   featured: boolean;
   verified: boolean;
@@ -55,3 +60,4 @@ export type PublicSiteData = {
 
 export type AdminContentRow = { key: string; section: string; label: string; draftValue: string; publishedValue: string; sortOrder: number; updatedAt: number };
 export type AdminItem = { id: string; kind: string; slug: string; title: string; data: Record<string, unknown>; status: string; sortOrder: number; createdAt: number; updatedAt: number };
+export type LocationImport = { id:string; filename:string; documentName:string; status:string; totalPlacemarks:number; pointCount:number; importedCount:number; duplicateCount:number; ignoredCount:number; warningCount:number; createdAt:number };
