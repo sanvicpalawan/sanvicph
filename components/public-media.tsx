@@ -1,9 +1,8 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, BadgeCheck, Copy, ExternalLink, Globe2, MapPin, Phone, Play, Waves } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, ExternalLink, Globe2, MapPin, Phone, Play } from "lucide-react";
 import type { MediaAsset, Place } from "@/lib/cms-types";
 import { pictures } from "@/lib/sanvic-data";
-import LocationMiniMap from "@/components/location-mini-map";
 
 export function mediaFor(ids: string[] | undefined, media: MediaAsset[]) {
   const byId = new Map(media.map((asset) => [asset.id, asset]));
@@ -38,14 +37,12 @@ export function PlaceSheet({ place, media, onOpen }: { place: Place; media: Medi
   </div>;
 }
 
-export function PlaceDetail({ place, media, onBack, onCommunity }: { place: Place; media: MediaAsset[]; onBack: () => void; onCommunity: () => void }) {
+export function PlaceDetail({ place, media, onBack }: { place: Place; media: MediaAsset[]; onBack: () => void; onCommunity: () => void }) {
   const assets = mediaFor(place.photoIds, media); const cover = media.find((asset) => asset.id === place.coverMediaId) || assets.find((asset) => asset.contentType.startsWith("image/"));
-  const galleryIds = place.photoIds.filter((id) => id !== cover?.id);
-  const copyCoordinates = async () => { try { await navigator.clipboard.writeText(`${place.displayLatitude}, ${place.displayLongitude}`); } catch {} };
   return <section className="place-detail view-enter">
-    <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || place.name}/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button><div className="place-detail-identity"><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1></div></div>
-    <div className="place-detail-body"><section className="place-profile-data" aria-labelledby="place-about-heading"><div className="place-about"><p className="eyebrow" id="place-about-heading">About this place</p><p>{place.description || `A ${place.type.toLowerCase()} in ${place.barangay}, San Vicente.`}</p></div><dl><div><dt>Category</dt><dd>{place.type}</dd></div><div><dt>Barangay</dt><dd>{place.barangay}</dd></div>{place.address&&<div className="place-fact-wide"><dt>Address</dt><dd>{place.address}</dd></div>}{place.verified&&<div><dt>Status</dt><dd><BadgeCheck/>Location verified</dd></div>}</dl></section><section className="place-location-panel"><LocationMiniMap latitude={place.displayLatitude} longitude={place.displayLongitude} name={place.name}/><div className="place-location-copy"><p className="eyebrow">Location</p><h2>{place.barangay}, San Vicente</h2><p>{place.address || `${place.barangay}, San Vicente, Palawan`}</p><div className="place-coordinate"><MapPin/><span>{place.displayLatitude.toFixed(5)}° N<br/>{place.displayLongitude.toFixed(5)}° E</span></div><div className="place-location-actions"><button onClick={copyCoordinates}><Copy/>Copy coordinates</button><button onClick={onCommunity}><Waves/>Explore {place.barangay}</button></div></div></section>
-      <MediaGallery ids={galleryIds} media={media} title={`See ${place.name}`}/>
+    <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || ""}/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button><div><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1><p>{place.description || place.address}</p></div></div>
+    <div className="place-detail-body"><section className="place-profile-data"><div><p className="eyebrow">About this place</p><h2>{place.name}</h2><p>{place.description || `A ${place.type.toLowerCase()} in ${place.barangay}, San Vicente.`}</p></div><dl><div><dt>Category</dt><dd>{place.type}</dd></div><div><dt>Barangay</dt><dd>{place.barangay}</dd></div>{place.address&&<div><dt>Address</dt><dd>{place.address}</dd></div>}{place.verified&&<div><dt>Status</dt><dd><BadgeCheck/>Location verified</dd></div>}</dl></section>
+      <MediaGallery ids={place.photoIds} media={media} title={`See ${place.name}`}/>
       {(place.phone || place.website || place.bookingUrl) && <section className="place-contact"><p className="eyebrow">Plan your visit</p><h2>Details from the host.</h2><div className="place-contact-links">{place.phone&&<a href={`tel:${place.phone.replace(/[^+\d]/g,"")}`}><Phone/><span><small>Phone</small>{place.phone}</span></a>}{place.website&&<a href={place.website} target="_blank" rel="noreferrer"><Globe2/><span><small>Website</small>{place.website.replace(/^https?:\/\//,"").replace(/\/$/,"")}</span><ExternalLink/></a>}{place.bookingUrl&&<a href={place.bookingUrl} target="_blank" rel="noreferrer"><MapPin/><span><small>Contact or booking</small>Open booking page</span><ArrowRight/></a>}</div></section>}
     </div>
   </section>;
