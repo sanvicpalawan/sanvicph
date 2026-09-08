@@ -184,3 +184,17 @@
  .place-location-copy{padding:42px 34px!important}
  .place-detail-body>.public-media-gallery .public-media-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Owner entry points stay visible in the map sheet and at the top of every place profile. */
+.place-owner-link{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 4px 2px;color:#d8c2a0;font-size:12px;line-height:1.35;text-decoration:none}
+.place-owner-link>svg{width:18px;flex:0 0 auto}
+.place-owner-link>svg:last-child{margin-left:auto}
+.place-owner-link strong{display:block;color:#f0eee4;font-weight:600}
+.place-owner-callout{display:grid;gap:22px;margin:24px 0 36px;padding:22px;border:1px solid #c4a17b66;border-radius:18px;background:#0c2022}
+.place-owner-callout h2{font-size:30px;line-height:1.1;margin:8px 0 10px}
+.place-owner-callout p:not(.eyebrow){margin:0;color:#b8c5c1;font-size:14px;line-height:1.65}
+.place-owner-actions{display:grid;gap:13px;align-content:center}
+.place-owner-actions .primary-button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;text-decoration:none}
+.place-owner-actions .primary-button svg{width:18px;flex:0 0 auto}
+.place-owner-actions>a:last-child{min-height:44px;display:flex;align-items:center;justify-content:center;color:#d8c2a0;font-size:12px;text-align:center;text-decoration:none}
+@media(min-width:680px){.place-owner-callout{grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);align-items:center;padding:28px}}
