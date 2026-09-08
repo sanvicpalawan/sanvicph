@@ -61,6 +61,45 @@ function normalize(value: string) {
   return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+const communityCenters = [
+  { name: "Binga", latitude: 10.769, longitude: 119.312 },
+  { name: "New Canipo", latitude: 10.698, longitude: 119.325 },
+  { name: "Sto. Niño", latitude: 10.649, longitude: 119.331 },
+  { name: "Alimanguan", latitude: 10.606, longitude: 119.325 },
+  { name: "San Isidro", latitude: 10.5658, longitude: 119.3037 },
+  { name: "New Agutaya", latitude: 10.543, longitude: 119.284 },
+  { name: "Poblacion", latitude: 10.524, longitude: 119.272 },
+  { name: "Kemdeng", latitude: 10.486, longitude: 119.264 },
+  { name: "Port Barton", latitude: 10.411, longitude: 119.179 },
+  { name: "Caruray", latitude: 10.32, longitude: 119.033 },
+] as const;
+
+function distanceMeters(latitudeA: number, longitudeA: number, latitudeB: number, longitudeB: number) {
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const earthRadius = 6_371_000;
+  const deltaLatitude = radians(latitudeB - latitudeA);
+  const deltaLongitude = radians(longitudeB - longitudeA);
+  const value = Math.sin(deltaLatitude / 2) ** 2
+    + Math.cos(radians(latitudeA)) * Math.cos(radians(latitudeB)) * Math.sin(deltaLongitude / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.sqrt(value));
+}
+
+function barangayFromCoordinates(latitude: number, longitude: number): string {
+  const nearest = communityCenters
+    .map((community) => ({ ...community, distance: distanceMeters(latitude, longitude, community.latitude, community.longitude) }))
+    .sort((left, right) => left.distance - right.distance)[0];
+  return nearest && nearest.distance <= 40_000 ? nearest.name : "Unassigned";
+}
+
+export function isNearDuplicate(
+  left: { name: string; latitude: number; longitude: number },
+  right: { name: string; latitude: number; longitude: number },
+  maximumDistanceMeters = 50,
+) {
+  return normalize(left.name) === normalize(right.name)
+    && distanceMeters(left.latitude, left.longitude, right.latitude, right.longitude) <= maximumDistanceMeters;
+}
+
 function barangayFromFolder(folder: string): string {
   const key = normalize(folder);
   if (key.includes("port barton")) return "Port Barton";
@@ -114,6 +153,8 @@ export function parseKmz(bytes: Uint8Array): KmzParseResult {
   if (!document) throw new Error("The KML document could not be read.");
 
   const documentName = valueText(document.name) || kmlName;
+  const documentKey = normalize(documentName);
+  const isSightseeingBatch = documentKey.includes("tourist destination") || documentKey.includes("sightseeing");
   const locations: KmzLocation[] = [];
   let totalPlacemarks = 0;
 
@@ -128,16 +169,19 @@ export function parseKmz(bytes: Uint8Array): KmzParseResult {
       const fields = dataFields(placemark);
       const name = valueText(placemark.name).slice(0, 180);
       if (!name) continue;
+      if (isSightseeingBatch && /\b(choke\s*point|chokepoint|waypoint|start\s*point|end\s*point)\b/i.test(name)) continue;
       const sourceFolder = folders.at(-1) || "";
-      const barangay = barangayFromFolder(sourceFolder);
+      const folderBarangay = barangayFromFolder(sourceFolder);
+      const barangay = folderBarangay === "Unassigned" ? barangayFromCoordinates(latitude, longitude) : folderBarangay;
       const rawDescription = valueText(placemark.description) || fields.description || "";
       const description = cleanDescription(rawDescription);
       const warnings: string[] = [];
       if (barangay === "Unassigned") warnings.push("Barangay could not be identified from the KMZ folder.");
+      else if (folderBarangay === "Unassigned") warnings.push("Barangay was assigned from coordinates and must be reviewed by an admin.");
       if (!description) warnings.push("No usable public description was included.");
-      warnings.push("Type was inferred and must be reviewed by an admin.");
       const sourceRecordId = fields.id || fields.ID || valueText(placemark["@_id"]);
-      const type = inferType(name, description);
+      const type = isSightseeingBatch ? "Sightseeing" : inferType(name, description);
+      if (!isSightseeingBatch) warnings.push("Type was inferred and must be reviewed by an admin.");
       locations.push({
         name, type, barangay, latitude, longitude, description, sourceRecordId, sourceFolder,
         sourceKeySeed: `${normalize(documentName)}|${normalize(sourceFolder)}|${normalize(name)}|${latitude.toFixed(6)}|${longitude.toFixed(6)}`,

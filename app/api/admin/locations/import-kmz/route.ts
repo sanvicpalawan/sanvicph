@@ -1,11 +1,8 @@
 import { audit, cleanText, json, requireAdmin, sha256 } from "@/lib/admin-server";
-import { parseKmz } from "@/lib/kmz-parser";
+import { isNearDuplicate, parseKmz } from "@/lib/kmz-parser";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const MAX_KMZ_BYTES = 8 * 1024 * 1024;
-
-const duplicateKey = (name: string, latitude: number, longitude: number) =>
-  `${name.trim().toLocaleLowerCase()}|${latitude.toFixed(5)}|${longitude.toFixed(5)}`;
 
 export async function POST(request: Request) {
   if (!await requireAdmin(request)) return json({ error: "Unauthorized" }, 401);
@@ -27,18 +24,19 @@ export async function POST(request: Request) {
       .neq("status", "archived");
     if (existingError) return json({ error: existingError.message }, 500);
 
-    const known = new Set((existing ?? []).map((place) => duplicateKey(
-      String(place.name ?? ""), Number(place.display_latitude), Number(place.display_longitude),
-    )));
+    const known = (existing ?? []).map((place) => ({
+      name: String(place.name ?? ""),
+      latitude: Number(place.display_latitude),
+      longitude: Number(place.display_longitude),
+    })).filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude));
     const now = Date.now();
     const importId = crypto.randomUUID();
     const rows: Record<string, unknown>[] = [];
     let duplicateCount = 0;
 
     for (const location of parsed.locations) {
-      const key = duplicateKey(location.name, location.latitude, location.longitude);
-      if (known.has(key)) { duplicateCount += 1; continue; }
-      known.add(key);
+      if (known.some((place) => isNearDuplicate(location, place))) { duplicateCount += 1; continue; }
+      known.push(location);
       rows.push({
         id: crypto.randomUUID(),
         name: cleanText(location.name, 180),
