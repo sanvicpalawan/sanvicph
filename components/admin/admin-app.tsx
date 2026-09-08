@@ -7,13 +7,15 @@ import type { AdminContentRow, AdminItem, LocationImport, MediaAsset, Place } fr
 import InlineMediaPicker from "@/components/admin/inline-media-picker";
 import LocationMapEditor from "@/components/admin/location-map-editor";
 import KmzImportPanel from "@/components/admin/kmz-import-panel";
+import OwnersPanel from "@/components/admin/owners-panel";
 
 type AdminData = { content: AdminContentRow[]; items: AdminItem[]; places: Place[]; media: MediaAsset[]; imports: LocationImport[]; audit: Record<string, unknown>[] };
-type Section = "overview" | "copy" | "locations" | "community" | "category" | "opportunity" | "badge" | "media" | "history" | "settings";
+type Section = "overview" | "copy" | "locations" | "community" | "category" | "opportunity" | "badge" | "media" | "history" | "settings" | "owners";
 const emptyData: AdminData = { content: [], items: [], places: [], media: [], imports: [], audit: [] };
 const barangays = ["Unassigned", "Alimanguan", "San Isidro", "Sto. Niño", "New Agutaya", "Poblacion", "Kemdeng", "Port Barton", "Caruray", "Binga", "New Canipo"];
 const placeTypes = ["Accommodation", "Cafe", "Restaurant", "Island", "Tour", "Sightseeing", "Beach", "Activity", "Transport", "Service"];
 const nav: { id: Section; label: string; icon: typeof Map }[] = [
+  { id:"owners",label:"Owners & Pro",icon:BadgeCheck },
   { id:"overview",label:"Dashboard",icon:LayoutDashboard }, { id:"copy",label:"Site Text",icon:BookOpenText }, { id:"locations",label:"Locations",icon:MapPin },
   { id:"community",label:"Explore",icon:Map }, { id:"category",label:"Discover",icon:Compass }, { id:"opportunity",label:"Travelers",icon:Users },
   { id:"badge",label:"Journey",icon:Footprints }, { id:"media",label:"Media",icon:FileImage }, { id:"history",label:"History",icon:Activity }, { id:"settings",label:"Settings",icon:Settings },
@@ -60,6 +62,7 @@ export default function AdminApp() {
     <aside className={`admin-sidebar ${menu?"open":""}`}><div className="admin-brand"><img src="/sanvic-logo.png" alt="SANVIC"/><span>Content Studio</span><button onClick={()=>setMenu(false)} aria-label="Close navigation"><X/></button></div><nav>{nav.map(item=><button key={item.id} className={section===item.id?"active":""} onClick={()=>go(item.id)}><item.icon/>{item.label}</button>)}</nav><div className="admin-sidebar-bottom"><a href="/" target="_blank"><Eye/>View live site</a><button onClick={logout}><LogOut/>Sign out</button></div></aside>
     {menu&&<button className="admin-overlay" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}<main className="admin-main"><header className="admin-topbar"><button className="admin-menu" onClick={()=>setMenu(true)} aria-label="Open navigation"><Menu/></button><div><p className="admin-kicker">SANVIC Studio</p><h1>{title}</h1></div><div className="admin-top-actions"><button onClick={load} disabled={busy} aria-label="Refresh"><RefreshCw className={busy?"spin":""}/></button><a href="/" target="_blank"><Eye/><span>Preview</span></a></div></header>
       {section==="overview"&&<Overview data={data} go={go}/>} {section==="copy"&&<CopyEditor rows={data.content} save={save}/>} {section==="locations"&&<LocationsV2 data={data} rows={filteredPlaces} query={query} setQuery={setQuery} editing={editingPlace} setEditing={setEditingPlace} save={save} deletePlace={deletePlace} mapNotice={mapNotice} setMapNotice={setMapNotice} reload={load} setMessage={setMessage}/>} {(["community","category","opportunity","badge"] as Section[]).includes(section)&&<CollectionEditorV2 kind={section} items={data.items.filter(item=>item.kind===section)} media={data.media} editing={editingItem} setEditing={setEditingItem} save={save} archive={archive} reload={load} setMessage={setMessage}/>} {section==="media"&&<MediaManager data={data.media} setMessage={setMessage} reload={load} save={save} archive={archive}/>} {section==="history"&&<History rows={data.audit}/>} {section==="settings"&&<SettingsPanel/>}
+      {section==="owners"&&<OwnersPanel/>}
     </main>{message&&<div className="admin-toast">{message}</div>}
   </div>;
 }

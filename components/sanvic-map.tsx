@@ -86,8 +86,8 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
         locationClusters.clearLayers();
         current.places.forEach((place) => {
           const selected = place.id === current.activePlace?.id;
-          const marker = L.marker([place.displayLatitude, place.displayLongitude], { keyboard: true, title: place.name, icon: L.divIcon({ className: 'sanvic-location-marker', html: `<span class="location-map-dot type-${markerClass(place.type)} ${selected ? 'selected' : ''}"></span>`, iconSize: [32, 32], iconAnchor: [16, 16] }) });
-          marker.bindTooltip(place.name, { direction: 'top', offset: [0, -10], opacity: 0.96, permanent: selected, className: 'sanvic-location-tooltip' });
+          const marker = L.marker([place.displayLatitude, place.displayLongitude], { keyboard: true, title: place.name, icon: L.divIcon({ className: 'sanvic-location-marker', html: `<span class="location-map-dot type-${markerClass(place.type)} ${selected ? 'selected' : ''} ${place.proActive ? 'pro-featured' : ''}"></span>`, iconSize: [32, 32], iconAnchor: [16, 16] }) });
+          marker.bindTooltip(`${safe(place.name)}${place.proActive ? ' · Featured' : ''}`, { direction: 'top', offset: [0, -10], opacity: 0.96, permanent: selected, className: 'sanvic-location-tooltip' });
           marker.on('click', () => current.onPlaceSelect(place));
           locationClusters.addLayer(marker);
         });

@@ -28,6 +28,8 @@ export type Place = {
   status: "draft" | "published" | "archived";
   featured: boolean;
   verified: boolean;
+  proActive?: boolean;
+  ownerDetails?: { hours?: string; amenities?: string; services?: string; offers?: string; social?: string; closure?: string };
   sortOrder: number;
   createdAt?: number;
   updatedAt?: number;
