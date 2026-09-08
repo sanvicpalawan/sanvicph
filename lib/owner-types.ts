@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const OWNER_BUCKET = 'owner-private';
 export const PRO_PRICE = 300;
 export const CONTACT_EMAIL = 'merqatodigital@proton.me';
+// Temporary build-phase switch. Set this to false when individual owner login is restored.
+export const OPEN_OWNER_BUILDER_MODE = true;
 export const barangays = ['Alimanguan', 'San Isidro', 'Sto. Niño', 'New Agutaya', 'Poblacion', 'Kemdeng', 'Port Barton', 'Caruray', 'Binga', 'New Canipo'] as const;
 export const placeTypes = ['Accommodation', 'Cafe', 'Restaurant', 'Island', 'Tour', 'Sightseeing', 'Beach', 'Activity', 'Transport', 'Service', 'Event'] as const;
 const text = (max: number) => z.string().trim().max(max);
