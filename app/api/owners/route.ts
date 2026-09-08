@@ -2,30 +2,31 @@ import { z } from 'zod';
 import { json } from '@/lib/admin-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ownerUser, requireManager, ownerError, sameOrigin } from '@/lib/owner-server';
-import { OWNER_BUCKET, PRO_PRICE, profileSchema, profileOf } from '@/lib/owner-types';
+import { OPEN_OWNER_BUILDER_MODE, OWNER_BUCKET, PRO_PRICE, profileSchema, profileOf } from '@/lib/owner-types';
 
 export async function GET(request: Request) {
   try {
     const user = await ownerUser(request); const db = supabaseAdmin();
-    const [memberships, requests, uploads, directory] = await Promise.all([
+    const [memberships, requests, uploads, directory, openPlaces] = await Promise.all([
       db.from('location_managers').select('place_id, places(*)').eq('user_id', user.id).eq('active', true),
       db.from('owner_requests').select('*, places(name, barangay)').eq('user_id', user.id).order('created_at', {ascending:false}).limit(100),
       db.from('owner_uploads').select('*').eq('user_id', user.id).eq('completed', true).eq('removed', false).order('created_at'),
       db.from('places').select('id, name, barangay, type, display_latitude, display_longitude').eq('status', 'published').order('name').limit(1000),
+      OPEN_OWNER_BUILDER_MODE ? db.from('places').select('*').eq('status', 'published').order('name').limit(1000) : Promise.resolve({data:[],error:null}),
     ]);
-    for (const result of [memberships, requests, uploads, directory]) if (result.error) throw result.error;
+    for (const result of [memberships, requests, uploads, directory, openPlaces]) if (result.error) throw result.error;
     const media = await Promise.all((uploads.data || []).map(async asset => {
       const { data, error } = await db.storage.from(OWNER_BUCKET).createSignedUrl(asset.object_key, 900);
       if (error) throw error;
       return { ...asset, url: data.signedUrl };
     }));
-    const managed = (memberships.data || []).flatMap(m=>Array.isArray(m.places)?m.places:[m.places]).filter(Boolean);
+    const managed = OPEN_OWNER_BUILDER_MODE ? (openPlaces.data || []) : (memberships.data || []).flatMap(m=>Array.isArray(m.places)?m.places:[m.places]).filter(Boolean);
     const legacyIds = [...new Set(managed.flatMap(p=>[p.cover_media_id,...(p.photo_ids_json||[])]).filter(Boolean))];
     if(legacyIds.length){
       const {data:old,error:oldError}=await db.from('media').select('id,filename,content_type,caption,alt_text').in('id',legacyIds).eq('status','active');if(oldError)throw oldError;
       for(const a of old||[]) media.push({...a,place_id:managed.find(p=>(p.photo_ids_json||[]).includes(a.id))?.id,purpose:'gallery',completed:true,published:true,url:`/api/media/${a.id}`});
     }
-    return json({ email: user.email, places: (memberships.data || []).map(m => m.places), requests: requests.data, media, directory: directory.data });
+    return json({ email: user.email || '', places: managed, requests: requests.data, media, directory: directory.data, openMode: OPEN_OWNER_BUILDER_MODE });
   } catch (error) { return ownerError(error); }
 }
 
