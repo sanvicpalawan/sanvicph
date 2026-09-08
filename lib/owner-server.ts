@@ -23,8 +23,8 @@ async function openBuilderUser() {
 }
 
 export async function ownerUser(request: Request) {
+  if (OPEN_OWNER_BUILDER_MODE) return openBuilderUser();
   const token = request.headers.get('authorization')?.replace(/^Bearer /i, '');
-  if (!token && OPEN_OWNER_BUILDER_MODE) return openBuilderUser();
   if (!token) throw new Error('Sign in to manage your locations.');
   const { data, error } = await supabaseAdmin().auth.getUser(token);
   if (error || !data.user?.email_confirmed_at || data.user.is_anonymous) throw new Error('Sign in with a verified email to continue.');
