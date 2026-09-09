@@ -200,7 +200,7 @@
 @media(min-width:680px){.place-owner-callout{grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);align-items:center;padding:28px}}
 
 /* Quiet, mobile-first visitor introduction. Content and choices are CMS-managed. */
-.onboarding-dialog{top:0!important;left:0!important;transform:none!important;width:100%!important;max-width:none!important;height:100svh!important;max-height:none!important;padding:0!important;gap:0!important;overflow:hidden;border:0!important;border-radius:0!important;background:#071416!important;color:#f0ede3!important;display:flex!important;flex-direction:column;box-shadow:none!important}
+.onboarding-dialog{top:0!important;left:0!important;translate:none!important;transform:none!important;width:100%!important;max-width:none!important;height:100svh!important;max-height:none!important;padding:0!important;gap:0!important;overflow:hidden;border:0!important;border-radius:0!important;background:#071416!important;color:#f0ede3!important;display:flex!important;flex-direction:column;box-shadow:none!important}
 .onboarding-top{height:76px;display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;flex:0 0 auto}
 .onboarding-top>img{width:154px;height:auto}
 .onboarding-top>button{width:44px;height:44px;border:1px solid #c3a2784a;border-radius:50%;background:#102225;color:#ece8dc;display:grid;place-items:center}
