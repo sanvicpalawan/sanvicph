@@ -49,6 +49,7 @@ export type MediaAsset = {
 };
 
 export type JourneyBadge = { id: string; name: string; description: string; rule: string; threshold: number; mediaIds?: string[] };
+export type OnboardingOption = { id:string; title:string; description:string; stage:"identity"|"mood"|"interest"; audience:"all"|"visitor"|"local"; route:string; image:string; mediaIds?:string[] };
 
 export type PublicSiteData = {
   copy: SiteCopy;
@@ -56,6 +57,7 @@ export type PublicSiteData = {
   categories: DiscoverCategory[];
   opportunities: Opportunity[];
   badges: JourneyBadge[];
+  onboarding: OnboardingOption[];
   places: Place[];
   media: MediaAsset[];
 };

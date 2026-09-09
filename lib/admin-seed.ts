@@ -18,12 +18,40 @@ export const copySeed = [
   ["journey.eyebrow", "Journey", "Eyebrow", "Collect moments. Track your story."],
   ["journey.heading", "Journey", "Heading", "Your island journey."],
   ["journey.description", "Journey", "Description", "A little more connected with every day."],
+  ["onboarding.eyebrow", "Onboarding", "Eyebrow", "Welcome to San Vicente"],
+  ["onboarding.identity.heading", "Onboarding", "First question", "Are you visiting or do you live here?"],
+  ["onboarding.identity.body", "Onboarding", "First question note", "We’ll shape SANVIC around the way you know the coast."],
+  ["onboarding.mood.heading", "Onboarding", "Second question", "What feels right today?"],
+  ["onboarding.mood.body", "Onboarding", "Second question note", "Choose one or more. There is no wrong kind of day."],
+  ["onboarding.interest.heading", "Onboarding", "Third question", "Where should we begin?"],
+  ["onboarding.interest.body", "Onboarding", "Third question note", "Pick a starting point and we’ll take you there."],
+  ["onboarding.next", "Onboarding", "Continue button", "Continue"],
+  ["onboarding.finish", "Onboarding", "Finish button", "Show me San Vicente"],
+  ["onboarding.back", "Onboarding", "Back button", "Back"],
+  ["onboarding.skip", "Onboarding", "Skip button", "Skip for now"],
 ] as const;
 
 export const itemSeed = [
   ...communities.map((item, index) => ({ id: `community-${item.id}`, kind: "community", slug: item.id, title: item.name, data: item, sortOrder: index })),
   ...categories.map((item, index) => ({ id: `category-${item.id}`, kind: "category", slug: item.id, title: item.title, data: item, sortOrder: index })),
   ...opportunities.map((item, index) => ({ id: `opportunity-${item.id}`, kind: "opportunity", slug: item.id, title: item.title, data: item, sortOrder: index })),
+  ...[
+    {id:"visitor",title:"I’m visiting",description:"Beaches, stays, tours and the essentials.",stage:"identity",audience:"all",route:"discover",image:"/images/hero.webp"},
+    {id:"local",title:"I live here",description:"Local events, new places and nearby moments.",stage:"identity",audience:"all",route:"discover",image:"/images/beach.webp"},
+    {id:"island-hopping",title:"Island hopping",description:"A day on the water.",stage:"mood",audience:"all",route:"category/experiences",image:"/images/kayak.webp"},
+    {id:"hammock",title:"Beach and hammock",description:"Nothing urgent. Just the coast.",stage:"mood",audience:"all",route:"category/beaches",image:"/images/stay.webp"},
+    {id:"eat",title:"Eat somewhere special",description:"Fresh catches and tables worth finding.",stage:"mood",audience:"all",route:"category/food",image:"/images/food.webp"},
+    {id:"local-spots",title:"Explore local spots",description:"Find the places people return to.",stage:"mood",audience:"all",route:"explore",image:"/images/beach.webp"},
+    {id:"active",title:"Surf or get active",description:"Move with the water and the morning.",stage:"mood",audience:"all",route:"category/experiences",image:"/images/surf.webp"},
+    {id:"tonight",title:"See what’s happening tonight",description:"Music, gatherings and shared tables.",stage:"mood",audience:"all",route:"category/events",image:"/images/events.webp"},
+    {id:"restaurants",title:"Best restaurants nearby",description:"Start with food close to you.",stage:"interest",audience:"all",route:"category/food",image:"/images/food.webp"},
+    {id:"long-beach",title:"Local spots along Long Beach",description:"Follow the coast at your own pace.",stage:"interest",audience:"all",route:"explore",image:"/images/sunset.webp"},
+    {id:"islands",title:"Islands and boat tours",description:"Find your way onto the water.",stage:"interest",audience:"visitor",route:"category/experiences",image:"/images/kayak.webp"},
+    {id:"quiet-beaches",title:"Quiet beaches",description:"A softer stretch of sand.",stage:"interest",audience:"all",route:"category/beaches",image:"/images/beach.webp"},
+    {id:"cafes",title:"Cafés and sunset drinks",description:"Stay for the changing light.",stage:"interest",audience:"all",route:"category/food",image:"/images/sunset.webp"},
+    {id:"events",title:"Events happening today",description:"See what the coast is sharing.",stage:"interest",audience:"local",route:"category/events",image:"/images/events.webp"},
+    {id:"surprise",title:"Surprise me",description:"Let curiosity choose the first stop.",stage:"interest",audience:"all",route:"discover",image:"/images/hero.webp"},
+  ].map((item,index)=>({id:`onboarding-${item.id}`,kind:"onboarding",slug:item.id,title:item.title,data:item,sortOrder:index})),
   ...[
     { id: "first-connection", name: "First Connection", description: "Join your first plan", rule: "joined", threshold: 1 },
     { id: "island-hopper", name: "Island Hopper", description: "Join an island-hopping plan", rule: "opportunity", threshold: 1 },
@@ -57,4 +85,3 @@ export const baiaSeed = {
   verified: true,
   sortOrder: 0,
 };
-

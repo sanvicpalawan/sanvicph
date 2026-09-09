@@ -6,8 +6,11 @@ type Row = Record<string, unknown>;
 export async function GET() {
   try {
     const db = supabaseAdmin();
-    const { data: exists } = await db.from("site_content").select("key").limit(1).maybeSingle();
-    if (!exists) await seedDefaults();
+    const [siteSeed, onboardingSeed] = await Promise.all([
+      db.from("site_content").select("key").limit(1).maybeSingle(),
+      db.from("content_items").select("id").eq("kind", "onboarding").limit(1).maybeSingle(),
+    ]);
+    if (!siteSeed.data || !onboardingSeed.data) await seedDefaults();
 
     const [content, items, places, media] = await Promise.all([
       db.from("site_content").select("key, published_value").order("sort_order"),
@@ -36,6 +39,6 @@ export async function GET() {
       return {...p, proActive, featured:p.featured||proActive, ownerDetails:row?.owner_details};
     }).sort((a,b)=>Number(b.featured)-Number(a.featured));
 
-    return json({ copy, communities: byKind("community"), categories: byKind("category"), opportunities: byKind("opportunity"), badges: byKind("badge"), places: enhancedPlaces, media: publicMedia });
+    return json({ copy, communities: byKind("community"), categories: byKind("category"), opportunities: byKind("opportunity"), badges: byKind("badge"), onboarding: byKind("onboarding"), places: enhancedPlaces, media: publicMedia });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Content unavailable" }, 500); }
 }
