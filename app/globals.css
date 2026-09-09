@@ -70,6 +70,7 @@
 .dark-map-tiles{filter:invert(1) hue-rotate(180deg) brightness(.62) contrast(1.18) saturate(.38)}
 .community-map-label{background:transparent;border:0}
 .community-map-label span{display:flex;width:130px;height:34px;align-items:center;justify-content:center;color:#f2ede3;font:600 13px/1.1 'Sanvic Sans',Arial,sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 3px #041013,0 0 8px #041013,0 0 12px #041013}
+.community-label-new-agutaya span{transform:translateX(-72px)}.community-label-poblacion span{transform:translateX(72px)}
 .municipality-map-label{background:transparent;border:0}.municipality-map-label>span{display:flex;width:170px;height:58px;flex-direction:column;align-items:center;justify-content:center;border:1px solid #d1ad7866;border-radius:18px;background:#071719e8;color:#fff8eb;box-shadow:0 10px 28px #0007}.municipality-map-label strong{font:400 21px/1 'Sanvic Serif',Georgia,serif}.municipality-map-label small{margin-top:6px;color:#c9b999;font:10px/1 'Sanvic Sans',Arial,sans-serif;letter-spacing:.04em}
 .sanvic-location-marker{background:transparent;border:0}
 .location-map-dot{position:absolute;left:7px;top:7px;width:18px;height:18px;border:2px solid #fffaf0;border-radius:50%;background:#d8c39f;box-shadow:0 2px 8px #0008}

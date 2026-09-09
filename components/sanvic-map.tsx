@@ -82,7 +82,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
         const current = callbacks.current;
         communityLabels.clearLayers();
         current.communities.forEach((community) => {
-          const label = L.marker([community.lat, community.lon], { interactive: true, keyboard: true, title: `Explore ${community.name}`, icon: L.divIcon({ className: 'community-map-label', html: `<span>${safe(community.name)}</span>`, iconSize: [130, 34], iconAnchor: [65, 17] }) });
+          const label = L.marker([community.lat, community.lon], { interactive: true, keyboard: true, title: `Explore ${community.name}`, icon: L.divIcon({ className: `community-map-label community-label-${community.id}`, html: `<span>${safe(community.name)}</span>`, iconSize: [130, 34], iconAnchor: [65, 17] }) });
           label.on('click', () => current.onSelect(community));
           communityLabels.addLayer(label);
         });
