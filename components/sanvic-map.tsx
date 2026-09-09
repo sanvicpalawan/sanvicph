@@ -7,8 +7,10 @@ import type { Community } from '@/lib/sanvic-data';
 import type { Place } from '@/lib/cms-types';
 
 type Basemap = 'street' | 'dark' | 'satellite';
+type MapView = 'palawan' | 'communities' | 'locations';
 const PALAWAN_BOUNDS: [[number, number], [number, number]] = [[7.72, 117.72], [12.38, 120.28]];
 const SAN_VICENTE_BOUNDS: [[number, number], [number, number]] = [[10.20, 118.92], [10.83, 119.43]];
+const SAN_VICENTE_CENTER: LatLngExpression = [10.52, 119.18];
 const safe = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character] || character));
 const markerClass = (type: string) => type.toLowerCase().replace(/[^a-z]+/g, '-');
 
@@ -20,6 +22,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
   const redraw = useRef<() => void>(() => {});
   const locateUser = useRef<() => void>(() => {});
   const [basemap, setBasemap] = useState<Basemap>('satellite');
+  const [mapView, setMapView] = useState<MapView>('communities');
   const [ready, setReady] = useState(false);
   const [locationState, setLocationState] = useState<'idle'|'locating'|'tracking'|'error'>('idle');
 
@@ -46,14 +49,15 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
       map.fitBounds(SAN_VICENTE_BOUNDS, { paddingTopLeft: [24, 100], paddingBottomRight: [24, 160], animate: false });
       map.setMinZoom(map.getBoundsZoom(PALAWAN_BOUNDS, false, L.point(24, 24)));
 
-      const communityLabels = L.layerGroup().addTo(map);
+      const municipalityLabel = L.layerGroup();
+      const communityLabels = L.layerGroup();
       const locationClusters = L.markerClusterGroup({
-        maxClusterRadius: 46,
+        maxClusterRadius: 54,
         disableClusteringAtZoom: 14,
         showCoverageOnHover: false,
         spiderfyOnMaxZoom: true,
         iconCreateFunction: (cluster) => L.divIcon({ className: 'sanvic-cluster', html: `<span>${cluster.getChildCount()}</span>`, iconSize: [38, 38] }),
-      }).addTo(map);
+      });
       let boundaries: ReturnType<typeof L.geoJSON> | null = null;
       let userMarker: ReturnType<typeof L.marker> | null = null; let accuracyCircle: ReturnType<typeof L.circle> | null = null; let watchId:number|null = null;
 
@@ -93,16 +97,38 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
         });
       };
       redraw.current = draw;
+      const municipalityMarker = L.marker(SAN_VICENTE_CENTER, {
+        interactive: true,
+        keyboard: true,
+        title: 'Return to San Vicente',
+        icon: L.divIcon({ className: 'municipality-map-label', html: '<span><strong>San Vicente</strong><small>Explore 10 communities</small></span>', iconSize: [170, 58], iconAnchor: [85, 29] }),
+      });
+      municipalityMarker.on('click', () => map.fitBounds(SAN_VICENTE_BOUNDS, { padding: [36, 84], duration: 0.45 }));
+      municipalityLabel.addLayer(municipalityMarker);
       const response = await fetch('/communities.geojson');
       if (response.ok) {
         const geojson = await response.json();
         boundaries = L.geoJSON(geojson, {
           style: () => ({ color: '#c3a474', weight: 1, opacity: 0.48, fillColor: '#348d70', fillOpacity: 0.025 }),
-          onEachFeature: (feature, layer) => layer.on('click', () => { const match = callbacks.current.communities.find((community) => community.boundary === feature.properties?.name); if (match) callbacks.current.onSelect(match); }),
-        }).addTo(map);
+          onEachFeature: (feature, layer) => layer.on('click', () => { const boundaryName = (feature.properties as { name?: string } | undefined)?.name; const match = callbacks.current.communities.find((community) => community.boundary === boundaryName); if (match) callbacks.current.onSelect(match); }),
+        });
       }
-      const scaleLabels = () => host.current?.classList.toggle('palawan-scale', map.getZoom() < 8.25);
-      map.on('zoomend', scaleLabels); scaleLabels(); draw();
+      const applyZoomLevel = () => {
+        const zoom = map.getZoom();
+        const nextView: MapView = zoom < 8.75 ? 'palawan' : zoom < 12 ? 'communities' : 'locations';
+        setMapView(nextView);
+        host.current?.setAttribute('data-map-view', nextView);
+        const showOnly = (layer: ReturnType<typeof L.layerGroup> | typeof locationClusters, visible: boolean) => {
+          if (visible && !map.hasLayer(layer)) layer.addTo(map);
+          if (!visible && map.hasLayer(layer)) map.removeLayer(layer);
+        };
+        showOnly(municipalityLabel, nextView === 'palawan');
+        showOnly(communityLabels, nextView === 'communities');
+        showOnly(locationClusters, nextView === 'locations');
+        if (boundaries) showOnly(boundaries, nextView !== 'palawan');
+      };
+      map.on('zoomend', applyZoomLevel);
+      draw(); applyZoomLevel();
       mapRef.current = map; setReady(true);
       cleanup = () => { if(watchId!==null)navigator.geolocation.clearWatch(watchId);locateUser.current=()=>{};redraw.current = () => {}; map.remove(); mapRef.current = null; tilesRef.current = null; };
     })();
@@ -118,18 +144,18 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
   useEffect(() => {
     const map = mapRef.current; if (!map || !ready) return;
     if (activePlace) map.flyTo([activePlace.displayLatitude, activePlace.displayLongitude], Math.max(map.getZoom(), 15), { duration: 0.45 });
-    else if (active) map.flyTo([active.lat, active.lon], Math.max(map.getZoom(), 11.5), { duration: 0.45 });
+    else if (active) map.flyTo([active.lat, active.lon], Math.max(map.getZoom(), 12.5), { duration: 0.45 });
   }, [active, activePlace, ready]);
 
-  const resetSanVicente = () => mapRef.current?.fitBounds(SAN_VICENTE_BOUNDS, { paddingTopLeft: [24, 100], paddingBottomRight: [24, 160], duration: 0.45 });
+  const resetSanVicente = () => mapRef.current?.fitBounds(SAN_VICENTE_BOUNDS, { paddingTopLeft: [32, 104], paddingBottomRight: [32, 150], duration: 0.45 });
   const showPalawan = () => mapRef.current?.fitBounds(PALAWAN_BOUNDS, { padding: [18, 18], duration: 0.5 });
 
   return <section className="explorer view-enter" aria-label="Municipality Explorer">
     <div className="map-canvas" ref={host}/>
     <div className="map-layer-switch" role="group" aria-label="Map appearance"><span><Layers3/>Map</span>{(['street', 'dark', 'satellite'] as Basemap[]).map((mode) => <button key={mode} className={basemap === mode ? 'active' : ''} onClick={() => setBasemap(mode)} aria-pressed={basemap === mode}>{mode[0].toUpperCase() + mode.slice(1)}</button>)}</div>
-    <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className={`icon-button map-user-location ${locationState==='tracking'?'active':''}`} onClick={()=>locateUser.current()} aria-label={locationState==='tracking'?'Center map on your location':'Show your location'} aria-pressed={locationState==='tracking'}><LocateFixed/></button><button className="icon-button" onClick={resetSanVicente} aria-label="Return to San Vicente"><MapPinned/></button></div>
+    <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className={`icon-button map-user-location ${locationState==='tracking'?'active':''}`} onClick={()=>locateUser.current()} aria-label={locationState==='tracking'?'Center map on your location':'Show your location'} aria-pressed={locationState==='tracking'}><LocateFixed/></button></div>
     {locationState==='locating'&&<div className="map-location-status">Finding your location…</div>}{locationState==='error'&&<div className="map-location-status error">Location unavailable. Allow location access and try again.</div>}
-    <button className="palawan-view" onClick={showPalawan}><Compass/>View all Palawan</button>
-    <div className="community-rail"><div className="rail-handle"/><div className="rail-title"><p className="eyebrow">San Vicente communities</p><span>{places.length} locations</span></div><nav aria-label="Coastal communities">{communities.map((community) => <button key={community.id} className={active?.id === community.id ? 'active' : ''} onClick={() => onSelect(community)}><span>{community.name}</span></button>)}</nav></div>
+    <button className="palawan-view" onClick={mapView === 'palawan' ? resetSanVicente : showPalawan}>{mapView === 'palawan' ? <MapPinned/> : <Compass/>}{mapView === 'palawan' ? 'Return to San Vicente' : 'View Palawan'}</button>
+    <div className={`community-rail ${mapView === 'palawan' ? 'regional' : ''}`}><div className="rail-handle"/><div className="rail-title"><p className="eyebrow">{mapView === 'palawan' ? 'San Vicente, Palawan' : mapView === 'locations' ? 'Explore locations' : 'San Vicente communities'}</p><span>{places.length} locations</span></div>{mapView === 'palawan' ? <button className="rail-return" onClick={resetSanVicente}><MapPinned/><span><strong>Return to San Vicente</strong><small>10 coastal communities</small></span></button> : <nav aria-label="Coastal communities">{communities.map((community) => <button key={community.id} className={active?.id === community.id ? 'active' : ''} onClick={() => onSelect(community)}><span>{community.name}</span></button>)}</nav>}</div>
   </section>;
 }

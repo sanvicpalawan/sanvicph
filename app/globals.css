@@ -70,7 +70,7 @@
 .dark-map-tiles{filter:invert(1) hue-rotate(180deg) brightness(.62) contrast(1.18) saturate(.38)}
 .community-map-label{background:transparent;border:0}
 .community-map-label span{display:flex;width:130px;height:34px;align-items:center;justify-content:center;color:#f2ede3;font:600 13px/1.1 'Sanvic Sans',Arial,sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 3px #041013,0 0 8px #041013,0 0 12px #041013}
-.palawan-scale .community-map-label{display:none}
+.municipality-map-label{background:transparent;border:0}.municipality-map-label>span{display:flex;width:170px;height:58px;flex-direction:column;align-items:center;justify-content:center;border:1px solid #d1ad7866;border-radius:18px;background:#071719e8;color:#fff8eb;box-shadow:0 10px 28px #0007}.municipality-map-label strong{font:400 21px/1 'Sanvic Serif',Georgia,serif}.municipality-map-label small{margin-top:6px;color:#c9b999;font:10px/1 'Sanvic Sans',Arial,sans-serif;letter-spacing:.04em}
 .sanvic-location-marker{background:transparent;border:0}
 .location-map-dot{position:absolute;left:7px;top:7px;width:18px;height:18px;border:2px solid #fffaf0;border-radius:50%;background:#d8c39f;box-shadow:0 2px 8px #0008}
 .location-map-dot.type-accommodation{background:#b66f8e}.location-map-dot.type-cafe,.location-map-dot.type-restaurant{background:#d38b63}.location-map-dot.type-beach,.location-map-dot.type-island{background:#4b91aa}.location-map-dot.type-tour,.location-map-dot.type-sightseeing,.location-map-dot.type-activity{background:#3d9a79}.location-map-dot.type-transport,.location-map-dot.type-service{background:#b99a63}
@@ -79,39 +79,40 @@
 .sanvic-cluster span{display:grid;place-items:center;width:38px;height:38px;border:1.5px solid #d5b17e;border-radius:50%;background:#173d3a;color:#fffaf0;font:600 12px 'Sanvic Sans',Arial,sans-serif;box-shadow:0 3px 12px #0008}
 .sanvic-location-tooltip{border:1px solid #b4926855!important;border-radius:9px!important;background:#071719ef!important;color:#fff7eb!important;box-shadow:0 5px 15px #0005!important;font:12px 'Sanvic Sans',Arial,sans-serif!important;padding:6px 9px!important}
 .sanvic-location-tooltip:before{border-top-color:#071719ef!important}
-.map-layer-switch{position:absolute;z-index:8;top:104px;left:14px;display:grid;grid-template-columns:auto repeat(3,auto);align-items:center;gap:3px;padding:4px;border:1px solid #b2926455;border-radius:14px;background:#071719ec;box-shadow:0 8px 24px #0003}
+.map-layer-switch{position:absolute;z-index:8;top:104px;left:14px;display:grid;grid-template-columns:auto repeat(3,auto);align-items:center;gap:2px;padding:3px;border:1px solid #b2926455;border-radius:14px;background:#071719ec;box-shadow:0 8px 24px #0003}
 .map-layer-switch>span,.map-layer-switch button{height:40px;display:flex;align-items:center;justify-content:center;border:0;border-radius:10px;padding:0 11px;font-size:11px;color:#aebbb7;background:transparent}
 .map-layer-switch>span{display:none;color:#d8b88e;gap:7px}
 .map-layer-switch>span svg{width:16px}
 .map-layer-switch button.active{background:#264a46;color:#fff7eb;box-shadow:inset 0 0 0 1px #d2ad7c38}
-.map-tools{position:absolute;z-index:8;right:14px;top:104px;display:flex;flex-direction:column;gap:8px}
-.map-tools .icon-button{width:44px;height:44px;background:#081a1dec;border-color:#b2926455;box-shadow:0 6px 18px #0003}
-.palawan-view{position:absolute;z-index:8;right:14px;top:252px;min-height:44px;display:flex;align-items:center;gap:7px;border:1px solid #b2926455;border-radius:22px;padding:0 13px;background:#081a1dec;color:#e8e2d5;font-size:11px;box-shadow:0 6px 18px #0003}
+.map-tools{position:absolute;z-index:8;right:14px;top:104px;display:flex;flex-direction:column;gap:0;border:1px solid #b2926455;border-radius:22px;background:#081a1dec;box-shadow:0 6px 18px #0003;overflow:hidden}
+.map-tools .icon-button{width:44px;height:44px;background:transparent;border:0;border-radius:0;box-shadow:none}.map-tools .icon-button+.icon-button{border-top:1px solid #b2926438}
+.palawan-view{position:absolute;z-index:8;right:14px;top:246px;min-height:42px;display:flex;align-items:center;gap:7px;border:1px solid #b2926455;border-radius:22px;padding:0 13px;background:#081a1dec;color:#e8e2d5;font-size:11px;box-shadow:0 6px 18px #0003}
 .palawan-view svg{width:16px;color:#d3af7e}
-.community-rail{position:absolute;z-index:9;left:10px;right:10px;bottom:78px;padding:10px;border:1px solid #b2926455;border-radius:19px;background:#071416f2;box-shadow:0 10px 32px #0005}
+.community-rail{position:absolute;z-index:9;left:10px;right:10px;bottom:78px;padding:9px;border:1px solid #b2926455;border-radius:18px;background:#071416f2;box-shadow:0 10px 32px #0005}
 .rail-handle{width:34px;height:3px;background:#75817e66;border-radius:3px;margin:0 auto 8px}
 .rail-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 7px 7px}
 .rail-title .eyebrow{font-size:10px;letter-spacing:.12em;color:#c5a47c}
 .rail-title>span{font-size:10px;color:#94a4a1}
 .community-rail nav{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding-bottom:1px}
 .community-rail nav::-webkit-scrollbar{display:none}
-.community-rail nav button{flex:0 0 auto;min-width:max-content;min-height:42px;padding:0 13px;border:1px solid #ffffff10;border-radius:13px;background:#102326;color:#c7d0cb;font-size:12px;line-height:1;scroll-snap-align:start}
+.community-rail nav button{flex:0 0 auto;min-width:max-content;min-height:40px;padding:0 12px;border:1px solid #ffffff10;border-radius:12px;background:#102326;color:#c7d0cb;font-size:12px;line-height:1;scroll-snap-align:start}
 .community-rail nav button.active{background:#244b46;border-color:#bd9f745c;color:#fff7e9}
+.community-rail.regional{left:50%;right:auto;width:min(330px,calc(100vw - 28px));transform:translateX(-50%)}.rail-return{width:100%;min-height:48px;display:flex;align-items:center;gap:11px;border:1px solid #ffffff12;border-radius:13px;background:#102326;color:#fff7e9;padding:7px 12px;text-align:left}.rail-return>svg{width:19px;color:#d2ad7c}.rail-return span,.rail-return strong,.rail-return small{display:block}.rail-return strong{font-size:12px}.rail-return small{margin-top:4px;color:#9fb0aa;font-size:10px}
 .community-sheet{z-index:70}
 @media(min-width:700px){
  .map-layer-switch{left:28px}.map-layer-switch>span{display:flex}
  .map-tools{right:28px}.palawan-view{right:28px}
- .community-rail{left:50%;right:auto;bottom:24px;transform:translateX(-50%);width:min(900px,calc(100vw - 48px));padding:11px 12px}
+ .community-rail{left:50%;right:auto;bottom:24px;transform:translateX(-50%);width:min(820px,calc(100vw - 48px));padding:10px 11px}
  .map-canvas .leaflet-control-attribution{margin-bottom:104px}
  .community-rail nav{justify-content:flex-start}
- .community-rail nav button{font-size:13px;min-height:44px}
+ .community-rail nav button{font-size:12px;min-height:40px}
 }
 @media(min-width:1100px){
- .map-layer-switch{top:116px;left:5vw}.map-tools{top:116px;right:5vw}.palawan-view{top:264px;right:5vw}
- .community-rail{bottom:28px;width:min(1040px,calc(100vw - 10vw));padding:12px 14px;border-radius:21px}
+ .map-layer-switch{top:116px;left:5vw}.map-tools{top:116px;right:5vw}.palawan-view{top:258px;right:5vw}
+ .community-rail{bottom:28px;width:min(860px,calc(100vw - 10vw));padding:10px 12px;border-radius:19px}
  .rail-handle{display:none}.rail-title{padding:0 5px 10px}
- .community-rail nav{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px}
- .community-rail nav button{min-width:0;padding:0 7px;font-size:12px}
+ .community-rail nav{display:flex;justify-content:flex-start;gap:5px}
+ .community-rail nav button{min-width:max-content;padding:0 11px;font-size:11px}
  .map-canvas .leaflet-control-attribution{margin-bottom:114px;margin-right:4vw}
 }
 .admin-location-map{margin-top:22px;border:1px solid #1d383317;border-radius:15px;overflow:hidden;background:#f5f7f3}
