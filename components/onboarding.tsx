@@ -31,7 +31,7 @@ export default function Onboarding({open,options,copy,onComplete,onDismiss}:{ope
     const chosen=[...choices].reverse().map(id=>options.find(option=>option.id===id)).find(Boolean);
     onComplete(chosen?.route||'discover',{audience,choices});
   };
-  return <Dialog open={open} onOpenChange={next=>{if(!next)onDismiss()}}><DialogContent className="onboarding-dialog" showCloseButton={false}>
+  return <Dialog open={open} onOpenChange={next=>{if(!next)onDismiss()}}><DialogContent className="onboarding-dialog translate-x-0 translate-y-0" showCloseButton={false}>
     <div className="onboarding-top"><img src="/sanvic-logo.png" alt="SANVIC" width="515" height="65"/><button type="button" onClick={onDismiss} aria-label={copy['onboarding.skip']||'Skip for now'}><X/></button></div>
     <div className="onboarding-progress" aria-label={`Step ${index+1} of ${stages.length}`}>{stages.map((item,step)=><span key={item} className={step<=index?'active':''}/>)}</div>
     <div className="onboarding-heading"><p className="eyebrow">{copy['onboarding.eyebrow']||'Welcome to San Vicente'}</p><DialogTitle>{heading}</DialogTitle><DialogDescription>{body}</DialogDescription></div>
