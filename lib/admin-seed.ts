@@ -1,6 +1,12 @@
 import { categories, communities, opportunities } from "./sanvic-data";
 
 export const copySeed = [
+  ["theme.background", "Theme", "Main and loading background", "#020e26"],
+  ["theme.surface", "Theme", "Cards and panels background", "#07182f"],
+  ["theme.action", "Theme", "Buttons and controls background", "#123a5c"],
+  ["loading.tagline", "Loading Screen", "Tagline", "The San Vicente Travel Hub"],
+  ["loading.subline", "Loading Screen", "Supporting line", "Curated by the people who live here"],
+  ["loading.footer", "Loading Screen", "Footer label", "PALAWAN"],
   ["home.eyebrow", "Home", "Eyebrow", "The soul of San Vicente"],
   ["home.heading", "Home", "Hero heading", "Slow down.\nTune in.\nYou’re in\nSan Vicente."],
   ["home.body", "Home", "Editorial introduction", "Some places ask you to do more.\nSan Vicente asks you to do less.\nWake slowly. Swim longer.\nEat what arrived this morning.\nLearn the names of fishermen.\nStay long enough to discover your own favorite beach.\nAnd perhaps leave carrying fewer plans than when you arrived."],
