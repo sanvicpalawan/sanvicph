@@ -22,7 +22,7 @@ export const communities:Community[]=[
 {id:'port-barton',name:'Port Barton',boundary:'Port Barton',lon:119.179,lat:10.411,description:'Island-hopping days. Barefoot evenings. A small beach town with plenty of stories.',known:['Boats','Kayak','Food','Beaches','Sunsets'],image:pictures.hero,count:23},
 {id:'caruray',name:'Caruray',boundary:'Caruray',lon:119.033,lat:10.32,description:'The quieter southern coast. Fishing communities, sheltered water, and room to wander.',known:['Fishing','Nature','Beaches','Boats','Sunsets'],image:pictures.beach,count:3},
 ];
-export type Opportunity={id:string;title:string;context:string;count:number;image:string;category:Category;pageTitle:string;headline:string;copy:string;cta:string;where:string;when:string;mediaIds?:string[]};
+export type Opportunity={id:string;title:string;context:string;count:number;image:string;category:Category;pageTitle:string;headline:string;copy:string;cta:string;where:string;when:string;mediaIds?:string[];joinedNicknames?:string[]};
 export const opportunities:Opportunity[]=[
 {id:'island-hopping',title:'Island hopping tomorrow',context:'Port Barton · A day on the water',count:12,image:pictures.kayak,category:'experiences',pageTitle:'Island hopping',headline:'Going island hopping tomorrow?',copy:'12 travelers are planning a trip. Share boats, split costs, make friends.',cta:'Find Travelers',where:'Port Barton',when:'Tomorrow · 8:30 AM'},
 {id:'sunset',title:'Long Beach sunset',context:'Long Beach · The golden hour',count:4,image:pictures.sunset,category:'beaches',pageTitle:'Long Beach',headline:'Sunset plans?',copy:'4 travelers are meeting at Long Beach. Bring yourself. Stay until the sky changes.',cta:'Join a Sunset Meetup',where:'Long Beach',when:'Tomorrow · 5:00 PM'},

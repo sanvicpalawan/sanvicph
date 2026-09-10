@@ -1,11 +1,12 @@
 ﻿import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { supabaseAdmin, TRAVELER_EXPERIENCE_BUCKET } from "@/lib/supabase-admin";
 
 type Row = Record<string, unknown>;
 const contentRow = (r: Row) => ({ key: r.key, section: r.section, label: r.label, draftValue: r.draft_value, publishedValue: r.published_value, sortOrder: r.sort_order, updatedAt: r.updated_at });
 const itemRow = (r: Row) => ({ id: r.id, kind: r.kind, slug: r.slug, title: r.title, data: r.data_json, status: r.status, sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 const mediaRow = (r: Row) => ({ id: r.id, filename: r.filename, contentType: r.content_type, sizeBytes: r.size_bytes, caption: r.caption, altText: r.alt_text, status: r.status, createdAt: r.created_at, url: `/api/media/${r.id}`, downloadUrl: `/api/media/${r.id}?download=1` });
 const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
+const travelerUploadRow = (r: Row) => { const t=r.travelers as {nickname?:string}|{nickname?:string}[]|null; return { id:r.id, opportunityId:r.opportunity_id, filename:r.filename, caption:r.caption, status:r.status, createdAt:r.created_at, nickname:Array.isArray(t)?t[0]?.nickname||"Traveler":t?.nickname||"Traveler", url:`/api/travelers/uploads/${r.id}` }; };
 
 const statusRank = (status: unknown) => (status === "published" ? 0 : status === "draft" ? 1 : 2);
 
@@ -15,14 +16,15 @@ export async function GET(request: Request) {
     await seedDefaults();
     const db = supabaseAdmin();
 
-    const [content, items, places, media, log] = await Promise.all([
+    const [content, items, places, media, log, travelerMedia] = await Promise.all([
       db.from("site_content").select("*").order("section").order("sort_order").order("key"),
       db.from("content_items").select("*").order("kind").order("sort_order").order("title"),
       db.from("places").select("*").order("sort_order").order("name"),
       db.from("media").select("*").order("created_at", { ascending: false }).limit(200),
       db.from("audit_log").select("*").order("created_at", { ascending: false }).limit(50),
+      db.from("traveler_uploads").select("id,opportunity_id,filename,caption,status,created_at,travelers(nickname)").eq("completed", true).eq("removed", false).order("created_at", { ascending: false }).limit(200),
     ]);
-    for (const r of [content, items, places, media, log]) if (r.error) return json({ error: r.error.message }, 500);
+    for (const r of [content, items, places, media, log, travelerMedia]) if (r.error) return json({ error: r.error.message }, 500);
 
     const sortedPlaces = [...(places.data ?? [])] as Row[];
     sortedPlaces.sort((a, b) => statusRank(a.status) - statusRank(b.status));
@@ -34,6 +36,7 @@ export async function GET(request: Request) {
       media: (media.data ?? []).map(mediaRow),
       imports: [],
       audit: log.data ?? [],
+      travelerMedia: (travelerMedia.data ?? []).map(travelerUploadRow),
     });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Unable to load admin data." }, 500); }
 }
@@ -123,6 +126,14 @@ export async function PUT(request: Request) {
       return json({ ok: true });
     }
 
+    if (payload.resource === "traveler_upload") {
+      const id = cleanText(record.id, 120); const status = cleanText(record.status, 20); if (!id || !["pending","published","rejected"].includes(status)) return json({ error: "Upload and valid status are required." }, 400);
+      const { error } = await db.from("traveler_uploads").update({ caption: cleanText(record.caption, 500), status }).eq("id", id).eq("completed", true).eq("removed", false);
+      if (error) return json({ error: error.message }, 500);
+      await audit(status === "published" ? "publish" : "moderate", "traveler_upload", id, `${status} traveler experience photo`);
+      return json({ ok: true });
+    }
+
     return json({ error: "Unknown resource." }, 400);
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Unable to save." }, 500); }
 }
@@ -140,6 +151,17 @@ export async function DELETE(request: Request) {
       const { error } = await db.from("places").delete().eq("id", safeId);
       if (error) return json({ error: error.message }, 500);
       await audit("delete", "place", safeId, `Permanently deleted ${cleanText(place.name, 180)}`);
+      return json({ ok: true });
+    }
+    if (resource === "traveler_upload") {
+      const db = supabaseAdmin();
+      const { data: upload, error: findError } = await db.from("traveler_uploads").select("object_key,filename").eq("id", safeId).maybeSingle();
+      if (findError) return json({ error: findError.message }, 500);
+      if (!upload) return json({ error: "Traveler upload not found." }, 404);
+      await db.storage.from(TRAVELER_EXPERIENCE_BUCKET).remove([upload.object_key]);
+      const { error } = await db.from("traveler_uploads").delete().eq("id", safeId);
+      if (error) return json({ error: error.message }, 500);
+      await audit("delete", "traveler_upload", safeId, `Deleted ${cleanText(upload.filename, 180)}`);
       return json({ ok: true });
     }
     const table = resource === "place" ? "places" : resource === "item" ? "content_items" : resource === "media" ? "media" : "";

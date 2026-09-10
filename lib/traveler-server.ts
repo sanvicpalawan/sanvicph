@@ -15,6 +15,12 @@ export function cleanNickname(value: unknown): string {
 
 export type Traveler = { id: string; nickname: string };
 
+export function assertSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  if (origin && host && new URL(origin).host !== host) throw new Error("Invalid request origin.");
+}
+
 export async function getTraveler(request: Request): Promise<Traveler | null> {
   const token = cookieValue(request, TRAVELER_COOKIE);
   if (!token) return null;

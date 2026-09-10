@@ -48,7 +48,9 @@ export type MediaAsset = {
   downloadUrl: string;
 };
 
-export type JourneyBadge = { id: string; name: string; description: string; rule: string; threshold: number; mediaIds?: string[] };
+export type JourneyBadge = { id: string; name: string; description: string; rule: string; threshold: number; targetId?: string; mediaIds?: string[] };
+export type Traveler = { id:string; nickname:string };
+export type TravelerUpload = { id:string; opportunityId:string; filename?:string; caption:string; status?:"pending"|"published"|"rejected"; createdAt:number; url:string; nickname?:string };
 export type OnboardingOption = { id:string; title:string; description:string; stage:"identity"|"mood"|"interest"; audience:"all"|"visitor"|"local"; route:string; image:string; mediaIds?:string[] };
 
 export type PublicSiteData = {
@@ -60,8 +62,10 @@ export type PublicSiteData = {
   onboarding: OnboardingOption[];
   places: Place[];
   media: MediaAsset[];
+  travelerExperiences?: TravelerUpload[];
 };
 
 export type AdminContentRow = { key: string; section: string; label: string; draftValue: string; publishedValue: string; sortOrder: number; updatedAt: number };
 export type AdminItem = { id: string; kind: string; slug: string; title: string; data: Record<string, unknown>; status: string; sortOrder: number; createdAt: number; updatedAt: number };
 export type LocationImport = { id:string; filename:string; documentName:string; status:string; totalPlacemarks:number; pointCount:number; importedCount:number; duplicateCount:number; ignoredCount:number; warningCount:number; createdAt:number };
+export type AdminTravelerUpload = TravelerUpload & { nickname:string };

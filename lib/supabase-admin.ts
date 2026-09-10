@@ -20,3 +20,4 @@ export function supabaseAdmin(): SupabaseClient {
 }
 
 export const MEDIA_BUCKET = "media";
+export const TRAVELER_EXPERIENCE_BUCKET = "traveler-experiences";

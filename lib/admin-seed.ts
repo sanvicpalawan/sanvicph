@@ -60,8 +60,8 @@ export const itemSeed = [
   ].map((item,index)=>({id:`onboarding-${item.id}`,kind:"onboarding",slug:item.id,title:item.title,data:item,sortOrder:index})),
   ...[
     { id: "first-connection", name: "First Connection", description: "Join your first plan", rule: "joined", threshold: 1 },
-    { id: "island-hopper", name: "Island Hopper", description: "Join an island-hopping plan", rule: "opportunity", threshold: 1 },
-    { id: "sunset-chaser", name: "Sunset Chaser", description: "Join a sunset plan", rule: "opportunity", threshold: 1 },
+    { id: "island-hopper", name: "Island Hopper", description: "Join an island-hopping plan", rule: "opportunity", threshold: 1, targetId: "island-hopping" },
+    { id: "sunset-chaser", name: "Sunset Chaser", description: "Join a sunset plan", rule: "opportunity", threshold: 1, targetId: "sunset" },
     { id: "barangay-collector", name: "Barangay Collector", description: "Visit your first community", rule: "visited", threshold: 1 },
     { id: "pathfinder", name: "Pathfinder", description: "Visit five communities", rule: "visited", threshold: 5 },
     { id: "sanvic-ambassador", name: "SanVic Ambassador", description: "Visit all ten communities", rule: "visited", threshold: 10 },
