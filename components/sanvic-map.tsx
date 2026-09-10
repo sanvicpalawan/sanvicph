@@ -14,7 +14,7 @@ const SAN_VICENTE_CENTER: LatLngExpression = [10.52, 119.18];
 const safe = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character] || character));
 const markerClass = (type: string) => type.toLowerCase().replace(/[^a-z]+/g, '-');
 
-export default function SanvicMap({ active, activePlace, onSelect, communities, places, onPlaceSelect }: { active: Community | null; activePlace: Place | null; onSelect: (community: Community) => void; communities: Community[]; places: Place[]; onPlaceSelect: (place: Place) => void; copy?: Record<string, string> }) {
+export default function SanvicMap({ active, activePlace, focus, onSelect, communities, places, onPlaceSelect }: { active: Community | null; activePlace: Place | null; focus?: {lat:number;lng:number;label:string;radius?:number}|null; onSelect: (community: Community) => void; communities: Community[]; places: Place[]; onPlaceSelect: (place: Place) => void; copy?: Record<string, string> }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const tilesRef = useRef<Record<Basemap, TileLayer> | null>(null);
@@ -145,7 +145,8 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
     const map = mapRef.current; if (!map || !ready) return;
     if (activePlace) map.flyTo([activePlace.displayLatitude, activePlace.displayLongitude], Math.max(map.getZoom(), 15), { duration: 0.45 });
     else if (active) map.flyTo([active.lat, active.lon], Math.max(map.getZoom(), 12.5), { duration: 0.45 });
-  }, [active, activePlace, ready]);
+    else if (focus) map.flyTo([focus.lat, focus.lng], focus.radius && focus.radius > 5 ? 12 : focus.radius && focus.radius > 2 ? 13 : 15, { duration: 0.45 });
+  }, [active, activePlace, focus, ready]);
 
   const resetSanVicente = () => mapRef.current?.fitBounds(SAN_VICENTE_BOUNDS, { paddingTopLeft: [32, 104], paddingBottomRight: [32, 150], duration: 0.45 });
   const showPalawan = () => mapRef.current?.fitBounds(PALAWAN_BOUNDS, { padding: [18, 18], duration: 0.5 });
@@ -155,6 +156,7 @@ export default function SanvicMap({ active, activePlace, onSelect, communities, 
     <div className="map-layer-switch" role="group" aria-label="Map appearance"><span><Layers3/>Map</span>{(['street', 'dark', 'satellite'] as Basemap[]).map((mode) => <button key={mode} className={basemap === mode ? 'active' : ''} onClick={() => setBasemap(mode)} aria-pressed={basemap === mode}>{mode[0].toUpperCase() + mode.slice(1)}</button>)}</div>
     <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className={`icon-button map-user-location ${locationState==='tracking'?'active':''}`} onClick={()=>locateUser.current()} aria-label={locationState==='tracking'?'Center map on your location':'Show your location'} aria-pressed={locationState==='tracking'}><LocateFixed/></button></div>
     {locationState==='locating'&&<div className="map-location-status">Finding your location…</div>}{locationState==='error'&&<div className="map-location-status error">Location unavailable. Allow location access and try again.</div>}
+    {focus&&!active&&!activePlace&&<div className="map-destination-focus"><span/><strong>{focus.label}</strong><small>Your destination</small></div>}
     {mapView !== 'palawan'&&<button className="palawan-view" onClick={showPalawan}><Compass/>View Palawan</button>}
     <div className={`community-rail ${mapView === 'palawan' ? 'regional' : ''}`}><div className="rail-handle"/><div className="rail-title"><p className="eyebrow">{mapView === 'palawan' ? 'San Vicente, Palawan' : mapView === 'locations' ? 'Explore locations' : 'San Vicente communities'}</p><span>{places.length} locations</span></div>{mapView === 'palawan' ? <button className="rail-return" onClick={resetSanVicente}><MapPinned/><span><strong>Return to San Vicente</strong><small>10 coastal communities</small></span></button> : <nav aria-label="Coastal communities">{communities.map((community) => <button key={community.id} className={active?.id === community.id ? 'active' : ''} onClick={() => onSelect(community)}><span>{community.name}</span></button>)}</nav>}</div>
   </section>;
