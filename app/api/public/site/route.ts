@@ -12,18 +12,33 @@ export async function GET() {
     ]);
     if (!siteSeed.data || !onboardingSeed.data) await seedDefaults();
 
-    const [content, items, places, media] = await Promise.all([
+    const [content, items, places, media, joins] = await Promise.all([
       db.from("site_content").select("key, published_value").order("sort_order"),
       db.from("content_items").select("kind, data_json").eq("status", "published").order("kind").order("sort_order"),
       db.from("places").select("*").eq("status", "published").order("featured", { ascending: false }).order("sort_order").order("name"),
       db.from("media").select("id, filename, content_type, size_bytes, caption, alt_text, status, created_at").eq("status", "active").order("created_at", { ascending: false }),
+      db.from("opportunity_joins").select("opportunity_id, travelers(nickname)").order("joined_at"),
     ]);
-    for (const r of [content, items, places, media]) if (r.error) return json({ error: r.error.message }, 500);
+    for (const r of [content, items, places, media, joins]) if (r.error) return json({ error: r.error.message }, 500);
 
     const copy = Object.fromEntries((content.data ?? []).map((r: Row) => [String(r.key), String(r.published_value)]));
     const byKind = (kind: string) => (items.data ?? []).filter((r: Row) => r.kind === kind).map((r: Row) => r.data_json);
     const publicPlaces = (places.data ?? []).map((r: Row) => ({ id:r.id,name:r.name,type:r.type,barangay:r.barangay,googleMapsUrl:r.google_maps_url,googlePlaceId:r.google_place_id,sourceLatitude:r.source_latitude,sourceLongitude:r.source_longitude,displayLatitude:r.display_latitude,displayLongitude:r.display_longitude,address:r.address,phone:r.phone,website:r.website,description:r.description,bookingUrl:r.booking_url,coverMediaId:r.cover_media_id,photoIds:r.photo_ids_json,status:r.status,featured:Boolean(r.featured),verified:Boolean(r.verified),sortOrder:r.sort_order }));
     const publicMedia = (media.data ?? []).map((r: Row) => ({ id:r.id,filename:r.filename,contentType:r.content_type,sizeBytes:r.size_bytes,caption:r.caption,altText:r.alt_text,status:r.status,createdAt:r.created_at,url:`/api/media/${r.id}`,downloadUrl:`/api/media/${r.id}?download=1` }));
+
+    // Real join counts/nicknames layered on top of each opportunity's CMS seed count (the floor).
+    const joinsByOpportunity = new Map<string, string[]>();
+    for (const row of (joins.data ?? []) as { opportunity_id: string; travelers: { nickname: string } | { nickname: string }[] | null }[]) {
+      const nickname = Array.isArray(row.travelers) ? row.travelers[0]?.nickname : row.travelers?.nickname;
+      if (!nickname) continue;
+      const list = joinsByOpportunity.get(row.opportunity_id) ?? [];
+      list.push(nickname);
+      joinsByOpportunity.set(row.opportunity_id, list);
+    }
+    const opportunities = (byKind("opportunity") as Row[]).map((o: Row) => {
+      const nicknames = joinsByOpportunity.get(String(o.id)) ?? [];
+      return { ...o, count: Number(o.count ?? 0) + nicknames.length, joinedNicknames: nicknames };
+    });
 
     // Optional until the additive owner SQL setup is applied. Never expose evidence or receipts.
     const ownerAssets = await db.from('owner_uploads').select('id,place_id,filename,content_type,size_bytes,caption,alt_text,created_at').eq('purpose','gallery').eq('published',true).eq('completed',true).eq('removed',false);
@@ -39,6 +54,6 @@ export async function GET() {
       return {...p, proActive, featured:p.featured||proActive, ownerDetails:row?.owner_details};
     }).sort((a,b)=>Number(b.featured)-Number(a.featured));
 
-    return json({ copy, communities: byKind("community"), categories: byKind("category"), opportunities: byKind("opportunity"), badges: byKind("badge"), onboarding: byKind("onboarding"), places: enhancedPlaces, media: publicMedia });
+    return json({ copy, communities: byKind("community"), categories: byKind("category"), opportunities, badges: byKind("badge"), onboarding: byKind("onboarding"), places: enhancedPlaces, media: publicMedia });
   } catch (error) { return json({ error: error instanceof Error ? error.message : "Content unavailable" }, 500); }
 }
