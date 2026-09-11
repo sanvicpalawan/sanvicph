@@ -8,7 +8,7 @@ import type { Place } from '@/lib/cms-types';
 
 type Basemap = 'street' | 'dark' | 'satellite';
 type MapView = 'palawan' | 'communities' | 'locations';
-const PALAWAN_BOUNDS: [[number, number], [number, number]] = [[7.72, 117.72], [12.38, 120.28]];
+const PALAWAN_BOUNDS: [[number, number], [number, number]] = [[7.55, 116.85], [12.38, 120.28]];
 const SAN_VICENTE_BOUNDS: [[number, number], [number, number]] = [[10.20, 118.92], [10.83, 119.43]];
 const SAN_VICENTE_CENTER: LatLngExpression = [10.52, 119.18];
 const safe = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character] || character));
