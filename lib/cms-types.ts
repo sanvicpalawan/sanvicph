@@ -20,6 +20,7 @@ export type Place = {
   bookingUrl: string;
   coverMediaId: string;
   photoIds: string[];
+  menuIds: string[];
   importBatchId?: string;
   importSourceKey?: string | null;
   sourceRecordId?: string;
