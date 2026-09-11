@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { LatLngExpression, Map as LeafletMap, TileLayer } from 'leaflet';
-import { Compass, Layers3, LocateFixed, MapPinned, Minus, Plus } from 'lucide-react';
+import { Compass, Layers3, LocateFixed, MapPinned, Minus, Plus, Route, X } from 'lucide-react';
 import type { Community } from '@/lib/sanvic-data';
 import type { Place } from '@/lib/cms-types';
 
@@ -14,17 +14,21 @@ const SAN_VICENTE_CENTER: LatLngExpression = [10.52, 119.18];
 const safe = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character] || character));
 const markerClass = (type: string) => type.toLowerCase().replace(/[^a-z]+/g, '-');
 
-export default function SanvicMap({ active, activePlace, focus, onSelect, communities, places, onPlaceSelect }: { active: Community | null; activePlace: Place | null; focus?: {lat:number;lng:number;label:string;radius?:number}|null; onSelect: (community: Community) => void; communities: Community[]; places: Place[]; onPlaceSelect: (place: Place) => void; copy?: Record<string, string> }) {
+export default function SanvicMap({ active, activePlace, focus, routeTo, onSelect, onPlaceSelect, onRouteClear, communities, places }: { active: Community | null; activePlace: Place | null; focus?: {lat:number;lng:number;label:string;radius?:number}|null; routeTo?: {lat:number;lng:number;label:string}|null; onSelect: (community: Community) => void; onPlaceSelect: (place: Place) => void; onRouteClear?: () => void; communities: Community[]; places: Place[]; copy?: Record<string, string> }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const tilesRef = useRef<Record<Basemap, TileLayer> | null>(null);
   const callbacks = useRef({ active, activePlace, onSelect, onPlaceSelect, communities, places });
   const redraw = useRef<() => void>(() => {});
   const locateUser = useRef<() => void>(() => {});
+  const requestRoute = useRef<(dest:{lat:number;lng:number;label:string}) => void>(() => {});
+  const clearRoute = useRef<() => void>(() => {});
   const [basemap, setBasemap] = useState<Basemap>('satellite');
   const [mapView, setMapView] = useState<MapView>('communities');
   const [ready, setReady] = useState(false);
   const [locationState, setLocationState] = useState<'idle'|'locating'|'tracking'|'error'>('idle');
+  const [routeState, setRouteState] = useState<'idle'|'loading'|'ready'|'error'>('idle');
+  const [routeInfo, setRouteInfo] = useState<{distanceKm:string;minutes:number;label:string}|null>(null);
 
   useEffect(() => { callbacks.current = { active, activePlace, onSelect, onPlaceSelect, communities, places }; redraw.current(); }, [active, activePlace, onSelect, onPlaceSelect, communities, places]);
 
@@ -60,6 +64,26 @@ export default function SanvicMap({ active, activePlace, focus, onSelect, commun
       });
       let boundaries: ReturnType<typeof L.geoJSON> | null = null;
       let userMarker: ReturnType<typeof L.marker> | null = null; let accuracyCircle: ReturnType<typeof L.circle> | null = null; let watchId:number|null = null;
+      let routeLayer: ReturnType<typeof L.polyline> | null = null; let routeRequestId = 0; let pendingRouteDest: {lat:number;lng:number;label:string} | null = null;
+
+      const fetchRoute = async (dest:{lat:number;lng:number;label:string}) => {
+        const start = userMarker?.getLatLng(); if (!start) return;
+        const requestId = ++routeRequestId; setRouteState('loading');
+        try {
+          const response = await fetch(`https://router.project-osrm.org/route/v1/foot/${start.lng},${start.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`);
+          const body = await response.json();
+          if (requestId !== routeRequestId) return;
+          const route = body?.routes?.[0];
+          if (!response.ok || !route) throw new Error();
+          const coords = (route.geometry.coordinates as [number,number][]).map(([lng,lat]) => [lat,lng] as LatLngExpression);
+          if (routeLayer) map.removeLayer(routeLayer);
+          routeLayer = L.polyline(coords, { color:'#d3b08a', weight:5, opacity:.85 }).addTo(map);
+          map.fitBounds(routeLayer.getBounds(), { padding:[60,90] });
+          setRouteInfo({ distanceKm:(route.distance/1000).toFixed(1), minutes:Math.round(route.duration/60), label:dest.label }); setRouteState('ready');
+        } catch { if (requestId===routeRequestId) setRouteState('error'); }
+      };
+      requestRoute.current = (dest) => { pendingRouteDest = dest; if (userMarker) fetchRoute(dest); else locateUser.current(); };
+      clearRoute.current = () => { pendingRouteDest = null; routeRequestId++; if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; } setRouteInfo(null); setRouteState('idle'); };
 
       locateUser.current = () => {
         if (!navigator.geolocation) { setLocationState('error'); return; }
@@ -75,6 +99,7 @@ export default function SanvicMap({ active, activePlace, focus, onSelect, commun
             map.flyTo(point,Math.max(map.getZoom(),15),{duration:.45});
           } else { userMarker.setLatLng(point); accuracyCircle?.setLatLng(point).setRadius(coords.accuracy); }
           setLocationState('tracking');
+          if (pendingRouteDest) { const dest = pendingRouteDest; pendingRouteDest = null; fetchRoute(dest); }
         },()=>{watchId=null;setLocationState('error')},{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
       };
 
@@ -130,7 +155,7 @@ export default function SanvicMap({ active, activePlace, focus, onSelect, commun
       map.on('zoomend', applyZoomLevel);
       draw(); applyZoomLevel();
       mapRef.current = map; setReady(true);
-      cleanup = () => { if(watchId!==null)navigator.geolocation.clearWatch(watchId);locateUser.current=()=>{};redraw.current = () => {}; map.remove(); mapRef.current = null; tilesRef.current = null; };
+      cleanup = () => { if(watchId!==null)navigator.geolocation.clearWatch(watchId);locateUser.current=()=>{};requestRoute.current=()=>{};clearRoute.current=()=>{};redraw.current = () => {}; map.remove(); mapRef.current = null; tilesRef.current = null; };
     })();
     return () => { cancelled = true; cleanup(); };
   }, []);
@@ -148,6 +173,8 @@ export default function SanvicMap({ active, activePlace, focus, onSelect, commun
     else if (focus) map.flyTo([focus.lat, focus.lng], focus.radius && focus.radius > 5 ? 12 : focus.radius && focus.radius > 2 ? 13 : 15, { duration: 0.45 });
   }, [active, activePlace, focus, ready]);
 
+  useEffect(() => { if (!ready) return; if (routeTo) requestRoute.current(routeTo); else clearRoute.current(); }, [routeTo, ready]);
+
   const resetSanVicente = () => mapRef.current?.fitBounds(SAN_VICENTE_BOUNDS, { paddingTopLeft: [32, 104], paddingBottomRight: [32, 150], duration: 0.45 });
   const showPalawan = () => mapRef.current?.fitBounds(PALAWAN_BOUNDS, { padding: [18, 18], duration: 0.5 });
 
@@ -156,6 +183,9 @@ export default function SanvicMap({ active, activePlace, focus, onSelect, commun
     <div className="map-layer-switch" role="group" aria-label="Map appearance"><span><Layers3/>Map</span>{(['street', 'dark', 'satellite'] as Basemap[]).map((mode) => <button key={mode} className={basemap === mode ? 'active' : ''} onClick={() => setBasemap(mode)} aria-pressed={basemap === mode}>{mode[0].toUpperCase() + mode.slice(1)}</button>)}</div>
     <div className="map-tools"><button className="icon-button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in"><Plus/></button><button className="icon-button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out"><Minus/></button><button className={`icon-button map-user-location ${locationState==='tracking'?'active':''}`} onClick={()=>locateUser.current()} aria-label={locationState==='tracking'?'Center map on your location':'Show your location'} aria-pressed={locationState==='tracking'}><LocateFixed/></button></div>
     {locationState==='locating'&&<div className="map-location-status">Finding your location…</div>}{locationState==='error'&&<div className="map-location-status error">Location unavailable. Allow location access and try again.</div>}
+    {routeState==='loading'&&<div className="map-route-info"><Route/><div><strong>Finding the way…</strong>{routeTo&&<small>to {routeTo.label}</small>}</div></div>}
+    {routeState==='ready'&&routeInfo&&<div className="map-route-info"><Route/><div><strong>{routeInfo.distanceKm} km · {routeInfo.minutes} min walk</strong><small>to {routeInfo.label}</small></div><button className="icon-button" onClick={()=>{clearRoute.current();onRouteClear?.()}} aria-label="Clear directions"><X/></button></div>}
+    {routeState==='error'&&<div className="map-route-info error"><Route/><div><strong>Could not find a walking route</strong><small>Try again, or use your phone’s maps app</small></div><button className="icon-button" onClick={()=>{clearRoute.current();onRouteClear?.()}} aria-label="Clear directions"><X/></button></div>}
     {focus&&!active&&!activePlace&&<div className="map-destination-focus"><span/><strong>{focus.label}</strong><small>Your destination</small></div>}
     {mapView !== 'palawan'&&<button className="palawan-view" onClick={showPalawan}><Compass/>View Palawan</button>}
     <div className={`community-rail ${mapView === 'palawan' ? 'regional' : ''}`}><div className="rail-handle"/><div className="rail-title"><p className="eyebrow">{mapView === 'palawan' ? 'San Vicente, Palawan' : mapView === 'locations' ? 'Explore locations' : 'San Vicente communities'}</p><span>{places.length} locations</span></div>{mapView === 'palawan' ? <button className="rail-return" onClick={resetSanVicente}><MapPinned/><span><strong>Return to San Vicente</strong><small>10 coastal communities</small></span></button> : <nav aria-label="Coastal communities">{communities.map((community) => <button key={community.id} className={active?.id === community.id ? 'active' : ''} onClick={() => onSelect(community)}><span>{community.name}</span></button>)}</nav>}</div>
