@@ -21,6 +21,7 @@ export type Place = {
   coverMediaId: string;
   photoIds: string[];
   menuIds: string[];
+  discoverSections: string[];
   importBatchId?: string;
   importSourceKey?: string | null;
   sourceRecordId?: string;

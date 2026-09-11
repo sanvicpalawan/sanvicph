@@ -5,7 +5,7 @@ type Row = Record<string, unknown>;
 const contentRow = (r: Row) => ({ key: r.key, section: r.section, label: r.label, draftValue: r.draft_value, publishedValue: r.published_value, sortOrder: r.sort_order, updatedAt: r.updated_at });
 const itemRow = (r: Row) => ({ id: r.id, kind: r.kind, slug: r.slug, title: r.title, data: r.data_json, status: r.status, sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 const mediaRow = (r: Row) => ({ id: r.id, filename: r.filename, contentType: r.content_type, sizeBytes: r.size_bytes, caption: r.caption, altText: r.alt_text, status: r.status, createdAt: r.created_at, url: `/api/media/${r.id}`, downloadUrl: `/api/media/${r.id}?download=1` });
-const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
+const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 const travelerUploadRow = (r: Row) => { const t=r.travelers as {nickname?:string}|{nickname?:string}[]|null; return { id:r.id, opportunityId:r.opportunity_id, filename:r.filename, caption:r.caption, status:r.status, createdAt:r.created_at, nickname:Array.isArray(t)?t[0]?.nickname||"Traveler":t?.nickname||"Traveler", url:`/api/travelers/uploads/${r.id}` }; };
 
 const statusRank = (status: unknown) => (status === "published" ? 0 : status === "draft" ? 1 : 2);
@@ -89,6 +89,7 @@ export async function PUT(request: Request) {
         description: cleanText(record.description), booking_url: cleanText(record.bookingUrl, 1000), cover_media_id: cleanText(record.coverMediaId, 120),
         photo_ids_json: Array.isArray(record.photoIds) ? record.photoIds : [],
         menu_media_ids_json: Array.isArray(record.menuIds) ? record.menuIds : [],
+        discover_sections_json: Array.isArray(record.discoverSections) ? record.discoverSections : [],
         status, featured: Boolean(record.featured), verified: Boolean(record.verified), sort_order: Number(record.sortOrder) || 0,
         created_at: now, updated_at: now,
       }, { onConflict: "id" });
