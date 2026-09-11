@@ -1,2 +1,3 @@
 import SanvicApp from '@/components/sanvic-app';
-export default function Page(){return <SanvicApp/>}
+import { LightboxProvider } from '@/components/lightbox';
+export default function Page(){return <LightboxProvider><SanvicApp/></LightboxProvider>}
