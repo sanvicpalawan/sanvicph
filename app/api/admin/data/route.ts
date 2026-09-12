@@ -9,7 +9,8 @@ const mediaRow = (r: Row) => ({ id: r.id, filename: r.filename, contentType: r.c
 const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, rooms: Array.isArray(r.rooms_json) ? r.rooms_json : [], links: Array.isArray(r.links_json) ? r.links_json : [], status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 
 // Rooms are stored as a JSON blob (places.rooms_json). Sanitize before saving so junk from
-// the admin UI can never reach the public site.
+// the admin UI can never reach the public site. Direct booking URLs are optional per-room
+// links (own site, Viber, email or phone) — not third-party marketplaces.
 const sanitizeRooms = (raw: unknown) => {
   if (!Array.isArray(raw)) return [];
   return raw.slice(0, 20).map((entry) => {
@@ -20,6 +21,8 @@ const sanitizeRooms = (raw: unknown) => {
       return { title: cleanText(String(group.title || ""), 80) || "Amenities", items };
     }).filter((group) => group.items.length);
     const rate = Number(room.rateFrom);
+    const rawBookingUrl = cleanText(String(room.bookingUrl || ""), 2000);
+    const bookingUrl = rawBookingUrl && /^(https:\/\/|tel:|mailto:|viber:)/i.test(rawBookingUrl) ? rawBookingUrl : undefined;
     return {
       id: cleanText(String(room.id || ""), 60) || crypto.randomUUID(),
       name: cleanText(String(room.name || ""), 160),
@@ -32,6 +35,7 @@ const sanitizeRooms = (raw: unknown) => {
       photoIds: (Array.isArray(room.photoIds) ? room.photoIds : []).map((id) => cleanText(String(id), 120)).filter(Boolean).slice(0, 60),
       rateFrom: Number.isFinite(rate) && rate > 0 ? Math.min(100000000, rate) : undefined,
       rateNote: cleanText(String(room.rateNote || ""), 200) || undefined,
+      bookingUrl,
     };
   }).filter((room) => room.name);
 };

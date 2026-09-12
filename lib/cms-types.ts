@@ -20,6 +20,7 @@ export type PlaceRoom = {
   photoIds: string[];
   rateFrom?: number | null;
   rateNote?: string;
+  bookingUrl?: string;
 };
 
 export type Place = {
