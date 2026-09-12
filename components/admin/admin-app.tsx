@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeft, BadgeCheck, BookOpenText, Compass, Download, Eye, FileImage, Footprints, LayoutDashboard, LoaderCircle, LogOut, Map, MapPin, Menu, Pencil, Plus, RefreshCw, Save, Search, Settings, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
 import type { AdminContentRow, AdminItem, AdminTravelerUpload, LocationImport, MediaAsset, Place } from "@/lib/cms-types";
 import InlineMediaPicker from "@/components/admin/inline-media-picker";
+import LinksEditor from "@/components/admin/links-editor";
 import RoomsEditor from "@/components/admin/rooms-editor";
 import LocationMapEditor from "@/components/admin/location-map-editor";
 import KmzImportPanel from "@/components/admin/kmz-import-panel";
@@ -116,6 +117,7 @@ function LocationsV2({data,rows,query,setQuery,editing,setEditing,save,deletePla
       <InlineMediaPicker media={data.media} selectedIds={editing.menuIds||[]} onChange={menuIds=>setEditing({...editing,menuIds})} reload={reload} setMessage={setMessage} label="Menu photos"/>
       <InlineMediaPicker media={data.media} selectedIds={editing.photoIds} onChange={photoIds=>setEditing({...editing,photoIds})} coverMediaId={editing.coverMediaId} onCoverChange={coverMediaId=>setEditing({...editing,coverMediaId})} reload={reload} setMessage={setMessage} label="Location gallery"/>
       <RoomsEditor rooms={editing.rooms||[]} onChange={rooms=>setEditing({...editing,rooms})} media={data.media} reload={reload} setMessage={setMessage}/>
+      <LinksEditor links={editing.links||[]} onChange={links=>setEditing({...editing,links})}/>
       {editing.importWarnings&&editing.importWarnings.length>0&&<div className="import-warnings"><strong>Import review</strong>{editing.importWarnings.map(warning=><span key={warning}>{warning}</span>)}</div>}
       <div className="admin-editor-actions location-actions">{editing.id&&<button className="danger location-delete" onClick={()=>deletePlace(editing)}><Trash2/>Delete location</button>}<button className="admin-primary" onClick={()=>save("place",editing as unknown as Record<string,unknown>)}><Save/>Save all changes</button>{editing.id&&<label className="explore-approval"><input type="checkbox" checked={editing.status==="published"} onChange={event=>setPublished(editing,event.target.checked)}/><span><strong>Show on Explore map</strong><small>Only checked locations are public</small></span></label>}</div>
     </section>}

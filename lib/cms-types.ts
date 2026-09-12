@@ -4,6 +4,10 @@ export type SiteCopy = Record<string, string>;
 
 export type RoomAmenityGroup = { title: string; items: string[] };
 
+// A repeatable booking / web link shown as a tappable pill on the public place page.
+// icon stores a name from the curated Lucide set in lib/place-links.ts (no component data).
+export type PlaceLink = { id: string; label: string; url: string; icon?: string };
+
 export type PlaceRoom = {
   id: string;
   name: string;
@@ -39,6 +43,7 @@ export type Place = {
   menuIds: string[];
   discoverSections: string[];
   rooms?: PlaceRoom[];
+  links?: PlaceLink[];
   importBatchId?: string;
   importSourceKey?: string | null;
   sourceRecordId?: string;

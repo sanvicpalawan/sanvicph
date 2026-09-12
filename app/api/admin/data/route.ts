@@ -1,11 +1,12 @@
 import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
+import { PLACE_LINK_ICON_NAMES } from "@/lib/place-links";
 import { supabaseAdmin, TRAVELER_EXPERIENCE_BUCKET } from "@/lib/supabase-admin";
 
 type Row = Record<string, unknown>;
 const contentRow = (r: Row) => ({ key: r.key, section: r.section, label: r.label, draftValue: r.draft_value, publishedValue: r.published_value, sortOrder: r.sort_order, updatedAt: r.updated_at });
 const itemRow = (r: Row) => ({ id: r.id, kind: r.kind, slug: r.slug, title: r.title, data: r.data_json, status: r.status, sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 const mediaRow = (r: Row) => ({ id: r.id, filename: r.filename, contentType: r.content_type, sizeBytes: r.size_bytes, caption: r.caption, altText: r.alt_text, status: r.status, createdAt: r.created_at, url: `/api/media/${r.id}`, downloadUrl: `/api/media/${r.id}?download=1` });
-const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, rooms: Array.isArray(r.rooms_json) ? r.rooms_json : [], status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
+const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, rooms: Array.isArray(r.rooms_json) ? r.rooms_json : [], links: Array.isArray(r.links_json) ? r.links_json : [], status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 
 // Rooms are stored as a JSON blob (places.rooms_json). Sanitize before saving so junk from
 // the admin UI can never reach the public site.
@@ -33,6 +34,25 @@ const sanitizeRooms = (raw: unknown) => {
       rateNote: cleanText(String(room.rateNote || ""), 200) || undefined,
     };
   }).filter((room) => room.name);
+};
+
+// Links are stored as a JSON blob (places.links_json). Only http(s) URLs and icons from the
+// curated Lucide set survive, so nothing from the admin UI can render as markup on the public page.
+const sanitizeLinks = (raw: unknown) => {
+  if (!Array.isArray(raw)) return [];
+  const hostFor = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, "") || url; } catch { return url; } };
+  return raw.slice(0, 24).map((entry) => {
+    const link = (entry && typeof entry === "object" ? entry : {}) as Record<string, unknown>;
+    const url = cleanText(String(link.url || ""), 2000);
+    const icon = cleanText(String(link.icon || ""), 60);
+    const label = cleanText(String(link.label || ""), 80) || hostFor(url);
+    return {
+      id: cleanText(String(link.id || ""), 60) || crypto.randomUUID(),
+      label,
+      url,
+      icon: PLACE_LINK_ICON_NAMES.includes(icon) ? icon : undefined,
+    };
+  }).filter((link) => link.label && /^https?:\/\//i.test(link.url));
 };
 const travelerUploadRow = (r: Row) => { const t=r.travelers as {nickname?:string}|{nickname?:string}[]|null; return { id:r.id, opportunityId:r.opportunity_id, filename:r.filename, caption:r.caption, status:r.status, createdAt:r.created_at, nickname:Array.isArray(t)?t[0]?.nickname||"Traveler":t?.nickname||"Traveler", url:`/api/travelers/uploads/${r.id}` }; };
 
@@ -108,6 +128,7 @@ export async function PUT(request: Request) {
       if (!name || !barangay || !type || !Number.isFinite(lat) || !Number.isFinite(lng)) return json({ error: "Name, type, barangay, latitude, and longitude are required." }, 400);
       const status = payload.publish ? "published" : cleanText(record.status, 20) || "draft";
       const rooms = sanitizeRooms(record.rooms);
+      const links = sanitizeLinks(record.links);
       const placePayload = {
         id, name, type, barangay,
         google_maps_url: cleanText(record.googleMapsUrl, 2000), google_place_id: cleanText(record.googlePlaceId, 300),
@@ -122,12 +143,22 @@ export async function PUT(request: Request) {
         status, featured: Boolean(record.featured), verified: Boolean(record.verified), sort_order: Number(record.sortOrder) || 0,
         created_at: now, updated_at: now,
       };
-      // Only touch rooms_json when this place actually has rooms, so saving any other location
-      // keeps working on databases where docs/rooms-setup.sql has not run yet.
-      const { error } = rooms.length ? await db.from("places").upsert({ ...placePayload, rooms_json: rooms }, { onConflict: "id" }) : await db.from("places").upsert(placePayload, { onConflict: "id" });
-      if (error) {
-        if (rooms.length && /rooms_json/i.test(error.message)) return json({ error: "Rooms support is not enabled on the database yet. Paste docs/rooms-setup.sql into the Supabase SQL Editor, run it, then save again." }, 500);
-        return json({ error: error.message }, 500);
+      // rooms_json is only written when this place has rooms, so saving any other location keeps
+      // working on databases where docs/rooms-setup.sql has not run yet. links_json is always
+      // written (even empty) so deleting the last link clears it; on databases without the column
+      // we retry the save without it so the rest of the edit is never lost.
+      const extras: Record<string, unknown> = {};
+      if (rooms.length) extras.rooms_json = rooms;
+      extras.links_json = links;
+      let upsert = await db.from("places").upsert({ ...placePayload, ...extras }, { onConflict: "id" });
+      if (upsert.error && !links.length && /links_json/i.test(upsert.error.message)) {
+        delete extras.links_json;
+        upsert = await db.from("places").upsert({ ...placePayload, ...extras }, { onConflict: "id" });
+      }
+      if (upsert.error) {
+        if (extras.rooms_json && /rooms_json/i.test(upsert.error.message)) return json({ error: "Rooms support is not enabled on the database yet. Paste docs/rooms-setup.sql into the Supabase SQL Editor, run it, then save again." }, 500);
+        if (extras.links_json && /links_json/i.test(upsert.error.message)) return json({ error: "Links support is not enabled on the database yet. Paste docs/links-setup.sql into the Supabase SQL Editor, run it, then save again." }, 500);
+        return json({ error: upsert.error.message }, 500);
       }
       await audit(payload.publish ? "publish" : "save", "place", id, `${payload.publish ? "Published" : "Saved"} ${name} in ${barangay}`);
       return json({ ok: true, id });
