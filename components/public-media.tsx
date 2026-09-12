@@ -135,6 +135,17 @@ export function RoomDetail({ room, media, open, onOpenChange }: { room: PlaceRoo
                 ? <p className="room-smoking" key={group.title}>{group.title}: {group.items.join(", ")}</p>
                 : <section className="room-group" key={group.title}><h3>{group.title}:</h3><ul>{group.items.map((item) => <li key={item}><Check size={14}/>{item}</li>)}</ul></section>
             )}
+            {room.bookingUrl && (
+              <a
+                className="room-book-direct"
+                href={room.bookingUrl}
+                target={room.bookingUrl.startsWith("https://") ? "_blank" : undefined}
+                rel={room.bookingUrl.startsWith("https://") ? "noreferrer" : undefined}
+              >
+                Book {room.name} directly
+                <ArrowRight />
+              </a>
+            )}
           </div>
         </div>
       </div>

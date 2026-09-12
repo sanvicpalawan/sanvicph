@@ -5,7 +5,7 @@ import { BedDouble, Pencil, Plus, Trash2, X } from "lucide-react";
 import type { MediaAsset, PlaceRoom } from "@/lib/cms-types";
 import InlineMediaPicker from "./inline-media-picker";
 
-const newRoom = (): PlaceRoom => ({ id: crypto.randomUUID(), name: "", units: 1, size: "", beds: "", description: "", chips: [], groups: [], photoIds: [] });
+const newRoom = (): PlaceRoom => ({ id: crypto.randomUUID(), name: "", units: 1, size: "", beds: "", description: "", chips: [], groups: [], photoIds: [], bookingUrl: "" });
 
 const parseList = (text: string) => text.split(/[\n,]+/).map((part) => part.trim()).filter(Boolean);
 
@@ -76,6 +76,7 @@ export default function RoomsEditor({ rooms, onChange, media, reload, setMessage
                   <label className="admin-field"><span>Beds</span><input value={room.beds || ""} placeholder="1 queen bed" onChange={(event) => patch(room.id, { beds: event.target.value })}/></label>
                   <label className="admin-field"><span>Rate from (₱, optional)</span><input type="number" min={0} value={room.rateFrom ?? ""} placeholder="1800" onChange={(event) => patch(room.id, { rateFrom: event.target.value === "" ? undefined : Math.max(0, Number(event.target.value)) })}/></label>
                   <label className="admin-field"><span>Rate note</span><input value={room.rateNote || ""} placeholder="per night · breakfast included" onChange={(event) => patch(room.id, { rateNote: event.target.value })}/></label>
+                  <label className="admin-field admin-field-wide"><span>Direct booking URL <small>own reservation page / Viber / email — not a third-party site</small></span><input value={room.bookingUrl || ""} placeholder="https://your-site.com/rooms/double-room · viber://chat?number=0917… · mailto:… · tel:…" onChange={(event) => patch(room.id, { bookingUrl: event.target.value })}/></label>
                   <label className="admin-field admin-field-wide"><span>Public description</span><textarea rows={3} value={room.description || ""} onChange={(event) => patch(room.id, { description: event.target.value })}/></label>
                   <label className="admin-field admin-field-wide"><span>Highlight chips <small>comma separated · shown as tags under the room name</small></span><LooseList value={room.chips || []} placeholder="Sea view, Air conditioning, Free Wifi" onCommit={(chips) => patch(room.id, { chips })}/></label>
                 </div>
