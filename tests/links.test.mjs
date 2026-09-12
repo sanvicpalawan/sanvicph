@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { PLACE_LINK_ICONS, PLACE_LINK_ICON_NAMES, placeLinkIcon } from "../lib/place-links.ts";
+import { PLACE_LINK_ICONS, PLACE_LINK_ICON_NAMES, PLATFORM_LINK_ICONS, placeLinkIcon, placeLinkIconOption } from "../lib/place-links.ts";
 
 test("links column is an additive one-time setup file", async () => {
   const sql = await readFile(new URL("../docs/links-setup.sql", import.meta.url), "utf8");
@@ -26,8 +26,20 @@ test("public site only exposes links for published places, with legacy fields in
   assert.match(route, /bookingUrl:r\.booking_url/);
 });
 
-test("curated Lucide icon set is unique, complete and always resolves", () => {
-  assert.ok(PLACE_LINK_ICONS.length >= 20, "curated set should offer a meaningful choice");
+test("platform group covers the booking and social platforms travelers expect", () => {
+  const expected = ["booking.com", "agoda", "airbnb", "facebook", "instagram", "tiktok", "youtube", "skyscanner", "tripadvisor", "trip.com"];
+  assert.equal(PLATFORM_LINK_ICONS.length, expected.length);
+  for (const name of expected) {
+    const option = placeLinkIconOption(name);
+    assert.ok(option, `missing platform icon for ${name}`);
+    assert.ok(option.label, `${name} needs a label`);
+    assert.match(option.platform, /^https:\/\//, `${name} needs a canonical preset URL`);
+    assert.ok(option.Icon, `${name} needs a resolvable icon component`);
+  }
+});
+
+test("curated icon set is unique, complete and always resolves", () => {
+  assert.ok(PLACE_LINK_ICONS.length >= 30, "curated set should offer a meaningful choice");
   const names = new Set(PLACE_LINK_ICONS.map((option) => option.name));
   assert.equal(names.size, PLACE_LINK_ICONS.length, "icon names must be unique");
   for (const name of names) assert.equal(placeLinkIcon(name), PLACE_LINK_ICONS.find((option) => option.name === name).Icon);
@@ -42,7 +54,8 @@ test("admin editor and public page both build on the shared icon list", async ()
     readFile(new URL("../components/admin/links-editor.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/public-media.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(editor, /PLACE_LINK_ICONS/); // picker grid renders the curated set
+  assert.match(editor, /PLATFORM_LINK_ICONS/); // picker leads with platform marks
+  assert.match(editor, /GENERIC_LINK_ICONS/); // generic icons follow
   assert.match(page, /placeLinkIcon/); // public pills resolve through the shared helper
   assert.match(page, /placeContactActions/); // links merge with phone/website/bookingUrl
 });

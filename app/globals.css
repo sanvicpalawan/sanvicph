@@ -424,6 +424,8 @@
 .link-editor-line .admin-row-actions{margin-left:auto;flex-wrap:nowrap}
 .link-editor-line .admin-row-actions button{min-width:46px}
 .link-editor-line .admin-row-actions button:disabled{opacity:.35;cursor:default}
+.link-icon-picker{display:grid;gap:12px}
+.link-icon-group small{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#758481;margin-bottom:6px}
 .link-icon-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
 .link-icon-grid button{height:44px;border:1px solid #1327421c;background:#fff;border-radius:10px;display:grid;place-items:center;color:#31465f;padding:0}
 .link-icon-grid button svg{width:18px;height:18px}
