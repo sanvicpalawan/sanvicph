@@ -2,6 +2,22 @@ import type { DiscoverCategory, Community, Opportunity } from "./sanvic-data";
 
 export type SiteCopy = Record<string, string>;
 
+export type RoomAmenityGroup = { title: string; items: string[] };
+
+export type PlaceRoom = {
+  id: string;
+  name: string;
+  units?: number;
+  size?: string;
+  beds?: string;
+  description?: string;
+  chips?: string[];
+  groups?: RoomAmenityGroup[];
+  photoIds: string[];
+  rateFrom?: number | null;
+  rateNote?: string;
+};
+
 export type Place = {
   id: string;
   name: string;
@@ -22,6 +38,7 @@ export type Place = {
   photoIds: string[];
   menuIds: string[];
   discoverSections: string[];
+  rooms?: PlaceRoom[];
   importBatchId?: string;
   importSourceKey?: string | null;
   sourceRecordId?: string;

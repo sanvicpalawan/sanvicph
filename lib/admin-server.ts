@@ -49,7 +49,7 @@ export async function seedDefaults() {
   }));
   await db.from("content_items").upsert(itemRows, { onConflict: "id", ignoreDuplicates: true });
 
-  await db.from("places").upsert([{
+  const baiaRow = {
     id: baiaSeed.id, name: baiaSeed.name, type: baiaSeed.type, barangay: baiaSeed.barangay,
     google_maps_url: baiaSeed.googleMapsUrl, google_place_id: baiaSeed.googlePlaceId,
     source_latitude: baiaSeed.sourceLatitude, source_longitude: baiaSeed.sourceLongitude,
@@ -59,7 +59,20 @@ export async function seedDefaults() {
     cover_media_id: baiaSeed.coverMediaId, photo_ids_json: baiaSeed.photoIds,
     status: baiaSeed.status, featured: true, verified: true, sort_order: 0,
     created_at: now, updated_at: now,
-  }], { onConflict: "id", ignoreDuplicates: true });
+  };
+  try {
+    // rooms_json may not exist yet on installs that have not run docs/rooms-setup.sql — seed without it in that case.
+    await db.from("places").upsert([{ ...baiaRow, rooms_json: baiaSeed.rooms?.length ? baiaSeed.rooms : null }], { onConflict: "id", ignoreDuplicates: true });
+  } catch {
+    await db.from("places").upsert([baiaRow], { onConflict: "id", ignoreDuplicates: true });
+  }
+  // Backfill rooms for BAIA rows created before rooms support existed. Only targets rows where
+  // rooms_json is still null, so anything edited in the admin UI is never clobbered.
+  if (baiaSeed.rooms?.length) {
+    try {
+      await db.from("places").update({ rooms_json: baiaSeed.rooms, updated_at: now }).eq("id", baiaSeed.id).is("rooms_json", null);
+    } catch { /* rooms column not created yet (docs/rooms-setup.sql) */ }
+  }
 
   const kmzSeedKey = "tre-san-vicente-palawan-v1";
   const { data: kmzSeeded } = await db.from("audit_log")

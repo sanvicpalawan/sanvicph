@@ -1,11 +1,39 @@
-﻿import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
+import { audit, cleanText, json, requireAdmin, seedDefaults } from "@/lib/admin-server";
 import { supabaseAdmin, TRAVELER_EXPERIENCE_BUCKET } from "@/lib/supabase-admin";
 
 type Row = Record<string, unknown>;
 const contentRow = (r: Row) => ({ key: r.key, section: r.section, label: r.label, draftValue: r.draft_value, publishedValue: r.published_value, sortOrder: r.sort_order, updatedAt: r.updated_at });
 const itemRow = (r: Row) => ({ id: r.id, kind: r.kind, slug: r.slug, title: r.title, data: r.data_json, status: r.status, sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
 const mediaRow = (r: Row) => ({ id: r.id, filename: r.filename, contentType: r.content_type, sizeBytes: r.size_bytes, caption: r.caption, altText: r.alt_text, status: r.status, createdAt: r.created_at, url: `/api/media/${r.id}`, downloadUrl: `/api/media/${r.id}?download=1` });
-const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
+const placeRow = (r: Row) => ({ id: r.id, name: r.name, type: r.type, barangay: r.barangay, googleMapsUrl: r.google_maps_url, googlePlaceId: r.google_place_id, sourceLatitude: r.source_latitude, sourceLongitude: r.source_longitude, displayLatitude: r.display_latitude, displayLongitude: r.display_longitude, address: r.address, phone: r.phone, website: r.website, description: r.description, bookingUrl: r.booking_url, coverMediaId: r.cover_media_id, photoIds: r.photo_ids_json, menuIds: r.menu_media_ids_json, discoverSections: r.discover_sections_json, rooms: Array.isArray(r.rooms_json) ? r.rooms_json : [], status: r.status, featured: Boolean(r.featured), verified: Boolean(r.verified), sortOrder: r.sort_order, createdAt: r.created_at, updatedAt: r.updated_at });
+
+// Rooms are stored as a JSON blob (places.rooms_json). Sanitize before saving so junk from
+// the admin UI can never reach the public site.
+const sanitizeRooms = (raw: unknown) => {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 20).map((entry) => {
+    const room = (entry && typeof entry === "object" ? entry : {}) as Record<string, unknown>;
+    const groups = (Array.isArray(room.groups) ? room.groups : []).slice(0, 12).map((entry2) => {
+      const group = (entry2 && typeof entry2 === "object" ? entry2 : {}) as Record<string, unknown>;
+      const items = (Array.isArray(group.items) ? group.items : []).map((item) => cleanText(String(item), 120)).filter(Boolean).slice(0, 80);
+      return { title: cleanText(String(group.title || ""), 80) || "Amenities", items };
+    }).filter((group) => group.items.length);
+    const rate = Number(room.rateFrom);
+    return {
+      id: cleanText(String(room.id || ""), 60) || crypto.randomUUID(),
+      name: cleanText(String(room.name || ""), 160),
+      units: Number.isFinite(Number(room.units)) && Number(room.units) > 0 ? Math.min(99, Number(room.units)) : undefined,
+      size: cleanText(String(room.size || ""), 60) || undefined,
+      beds: cleanText(String(room.beds || ""), 120) || undefined,
+      description: cleanText(String(room.description || "")) || undefined,
+      chips: (Array.isArray(room.chips) ? room.chips : []).map((chip) => cleanText(String(chip), 80)).filter(Boolean).slice(0, 16),
+      groups,
+      photoIds: (Array.isArray(room.photoIds) ? room.photoIds : []).map((id) => cleanText(String(id), 120)).filter(Boolean).slice(0, 60),
+      rateFrom: Number.isFinite(rate) && rate > 0 ? Math.min(100000000, rate) : undefined,
+      rateNote: cleanText(String(room.rateNote || ""), 200) || undefined,
+    };
+  }).filter((room) => room.name);
+};
 const travelerUploadRow = (r: Row) => { const t=r.travelers as {nickname?:string}|{nickname?:string}[]|null; return { id:r.id, opportunityId:r.opportunity_id, filename:r.filename, caption:r.caption, status:r.status, createdAt:r.created_at, nickname:Array.isArray(t)?t[0]?.nickname||"Traveler":t?.nickname||"Traveler", url:`/api/travelers/uploads/${r.id}` }; };
 
 const statusRank = (status: unknown) => (status === "published" ? 0 : status === "draft" ? 1 : 2);
@@ -79,7 +107,8 @@ export async function PUT(request: Request) {
       const lat = Number(record.displayLatitude); const lng = Number(record.displayLongitude);
       if (!name || !barangay || !type || !Number.isFinite(lat) || !Number.isFinite(lng)) return json({ error: "Name, type, barangay, latitude, and longitude are required." }, 400);
       const status = payload.publish ? "published" : cleanText(record.status, 20) || "draft";
-      const { error } = await db.from("places").upsert({
+      const rooms = sanitizeRooms(record.rooms);
+      const placePayload = {
         id, name, type, barangay,
         google_maps_url: cleanText(record.googleMapsUrl, 2000), google_place_id: cleanText(record.googlePlaceId, 300),
         source_latitude: record.sourceLatitude == null ? null : Number(record.sourceLatitude),
@@ -92,8 +121,14 @@ export async function PUT(request: Request) {
         discover_sections_json: Array.isArray(record.discoverSections) ? record.discoverSections : [],
         status, featured: Boolean(record.featured), verified: Boolean(record.verified), sort_order: Number(record.sortOrder) || 0,
         created_at: now, updated_at: now,
-      }, { onConflict: "id" });
-      if (error) return json({ error: error.message }, 500);
+      };
+      // Only touch rooms_json when this place actually has rooms, so saving any other location
+      // keeps working on databases where docs/rooms-setup.sql has not run yet.
+      const { error } = rooms.length ? await db.from("places").upsert({ ...placePayload, rooms_json: rooms }, { onConflict: "id" }) : await db.from("places").upsert(placePayload, { onConflict: "id" });
+      if (error) {
+        if (rooms.length && /rooms_json/i.test(error.message)) return json({ error: "Rooms support is not enabled on the database yet. Paste docs/rooms-setup.sql into the Supabase SQL Editor, run it, then save again." }, 500);
+        return json({ error: error.message }, 500);
+      }
       await audit(payload.publish ? "publish" : "save", "place", id, `${payload.publish ? "Published" : "Saved"} ${name} in ${barangay}`);
       return json({ ok: true, id });
     }
