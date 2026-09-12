@@ -5,7 +5,24 @@ import { ArrowLeft, ArrowRight, BadgeCheck, BedDouble, Check, ChevronLeft, Chevr
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useLightbox, HeroExpandButton } from "@/components/lightbox";
 import type { MediaAsset, Place, PlaceRoom } from "@/lib/cms-types";
+import { placeLinkIcon } from "@/lib/place-links";
 import { pictures } from "@/lib/sanvic-data";
+
+// Merged booking/contact actions: curated Links first (admin order), then the older
+// phone / website / bookingUrl fields, all rendered as the same compact pills.
+type PlaceContactAction = { key: string; label: string; href: string; icon?: string; external: boolean };
+const linkHost = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, "") || url; } catch { return url; } };
+export function placeContactActions(place: Place): PlaceContactAction[] {
+  const actions: PlaceContactAction[] = [];
+  for (const link of place.links || []) {
+    if (!link.url) continue;
+    actions.push({ key: link.id || link.url, label: link.label || linkHost(link.url), href: link.url, icon: link.icon, external: true });
+  }
+  if (place.phone) actions.push({ key: "phone", label: place.phone, href: `tel:${place.phone.replace(/\D/g, "")}`, icon: "Phone", external: false });
+  if (place.website) actions.push({ key: "website", label: linkHost(place.website), href: place.website, icon: "Globe", external: true });
+  if (place.bookingUrl) actions.push({ key: "booking", label: "Contact or booking", href: place.bookingUrl, icon: "ExternalLink", external: true });
+  return actions;
+}
 
 export function mediaFor(ids: string[] | undefined, media: MediaAsset[]) {
   const byId = new Map(media.map((asset) => [asset.id, asset]));
@@ -147,11 +164,13 @@ export function PlaceDetail({ place, media, onBack, onDirections }: { place: Pla
   const galleryIds = place.photoIds.filter((id) => id !== cover?.id);
   const openLightbox = useLightbox();
   const rooms = place.rooms || [];
+  const contactActions = placeContactActions(place);
   const [activeRoom, setActiveRoom] = useState<PlaceRoom | null>(null);
   return <section className="place-detail view-enter">
     <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || place.name}/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button>{cover&&<HeroExpandButton label={`View larger photo of ${place.name}`} onExpand={()=>openLightbox({src:cover.url,alt:cover.altText||place.name,caption:cover.caption})}/>}<div className="place-detail-identity"><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1></div></div>
     <div className="place-detail-body">
       <button className="primary-button place-directions-button" onClick={onDirections}><Route/>Get walking directions<ArrowRight/></button>
+      {contactActions.length>0&&<section className="place-links" aria-label="Book or connect"><p className="eyebrow">Book or connect</p><div className="place-link-pills">{contactActions.map(action=>{const Icon=placeLinkIcon(action.icon);return <a key={action.key} className="place-link-pill" href={action.href} target={action.external?"_blank":undefined} rel={action.external?"noreferrer":undefined} aria-label={action.external?`${action.label} — opens in a new tab`:`Call ${action.label}`}><Icon/><span>{action.label}</span></a>})}</div></section>}
       {rooms.length>0&&<section className="place-rooms" aria-labelledby="place-rooms-heading"><div className="place-rooms-head"><p className="eyebrow">Where you&rsquo;ll sleep</p><h2 id="place-rooms-heading">Rooms &amp; stays</h2><p>{rooms.length} room type{rooms.length>1?"s":""} · tap a room for its photos, setup and amenities.</p></div><div className="room-cards">{rooms.map(room=><RoomCard key={room.id} room={room} media={media} onOpen={()=>setActiveRoom(room)}/>)}</div></section>}
       <section className="place-profile-data" aria-labelledby="place-about-heading"><div className="place-about"><p className="eyebrow" id="place-about-heading">About this place</p><p>{place.description || `A ${place.type.toLowerCase()} in ${place.barangay}, San Vicente.`}</p></div><dl><div><dt>Category</dt><dd>{place.type}</dd></div><div><dt>Barangay</dt><dd>{place.barangay}</dd></div>{place.address&&<div className="place-fact-wide"><dt>Address</dt><dd>{place.address}</dd></div>}{place.verified&&<div><dt>Status</dt><dd><BadgeCheck/>Location verified</dd></div>}</dl></section>
       <MediaGallery ids={place.menuIds} media={media} title="Menu"/>
