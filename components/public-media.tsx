@@ -117,7 +117,7 @@ export function RoomDetail({ room, media, open, onOpenChange }: { room: PlaceRoo
                 </div>}
               </div> : <div className="room-hero-empty"><BedDouble/><p>No room photos yet — add them from the SANVIC admin.</p></div>}
             </div>
-            {images.length > 1 && <div className="room-thumbs" aria-label="All photos of this room">{images.map((asset, imageIndex) => <button type="button" key={asset.id} className={imageIndex === index ? "active" : ""} onClick={() => setIndex(imageIndex)} aria-label={`View photo ${imageIndex + 1}`}><img src={asset.url} alt=""/></button>)}</div>}
+            {images.length > 1 && <div className="room-thumbs" aria-label="All photos of this room">{images.map((asset, imageIndex) => <button type="button" key={asset.id} className={imageIndex === index ? "active" : ""} onClick={() => setIndex(imageIndex)} aria-label={`View photo ${imageIndex + 1}`}><img src={asset.url} alt="" loading="lazy" decoding="async"/></button>)}</div>}
           </div>
           <div className="room-detail-info">
             <p className="eyebrow">Room type</p>
@@ -160,7 +160,7 @@ export function PlaceSheet({ place, media, onOpen, onDirections }: { place: Plac
   const rooms = place.rooms || [];
   const roomCovers = rooms.map((room) => roomImages(room, media)[0]).filter((asset): asset is MediaAsset => Boolean(asset));
   return <div className="place-sheet-inner">
-    <div className="place-sheet-cover">{cover ? <button type="button" onClick={() => openLightbox(galleryImages, 0)} aria-label={`View larger photo of ${place.name}`}><img src={cover.url} alt={cover.altText || ""}/></button> : <img src={pictures.stay} alt=""/>}<span><MapPin/>{place.type}</span></div>
+    <div className="place-sheet-cover">{cover ? <button type="button" onClick={() => openLightbox(galleryImages, 0)} aria-label={`View larger photo of ${place.name}`}><img src={cover.url} alt={cover.altText || ""} decoding="async"/></button> : <img src={pictures.stay} alt="" loading="lazy" decoding="async"/>}<span><MapPin/>{place.type}</span></div>
     <div className="place-sheet-copy"><p className="eyebrow">{place.barangay} · San Vicente</p><h2>{place.name}</h2><p>{place.description || place.address}</p>
       {rooms.length > 0 && <div className="place-sheet-rooms">
         {roomCovers.slice(0, 3).map((asset) => <img key={asset.id} src={asset.url} alt="" loading="lazy"/>)}
@@ -178,7 +178,7 @@ export function PlaceDetail({ place, media, onBack, onDirections }: { place: Pla
   const contactActions = placeContactActions(place);
   const [activeRoom, setActiveRoom] = useState<PlaceRoom | null>(null);
   return <section className="place-detail view-enter">
-    <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || place.name}/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button>{cover&&<HeroExpandButton label={`View larger photo of ${place.name}`} onExpand={()=>openLightbox({src:cover.url,alt:cover.altText||place.name,caption:cover.caption})}/>}<div className="place-detail-identity"><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1></div></div>
+    <div className="place-detail-hero"><img src={cover?.url || pictures.stay} alt={cover?.altText || place.name} decoding="async"/><button className="icon-button back-button" onClick={onBack} aria-label="Back to Municipality Explorer"><ArrowLeft/></button>{cover&&<HeroExpandButton label={`View larger photo of ${place.name}`} onExpand={()=>openLightbox({src:cover.url,alt:cover.altText||place.name,caption:cover.caption})}/>}<div className="place-detail-identity"><p className="eyebrow">{place.type} · {place.barangay}</p><h1>{place.name}</h1></div></div>
     <div className="place-detail-body">
       <button className="primary-button place-directions-button" onClick={onDirections}><Route/>Get walking directions<ArrowRight/></button>
       {contactActions.length>0&&<section className="place-links" aria-label="Book or connect"><p className="eyebrow">Book or connect</p><div className="place-link-pills">{contactActions.map(action=>{const Icon=placeLinkIcon(action.icon);return <a key={action.key} className="place-link-pill" href={action.href} target={action.external?"_blank":undefined} rel={action.external?"noreferrer":undefined} aria-label={action.external?`${action.label} — opens in a new tab`:`Call ${action.label}`}><Icon/><span>{action.label}</span></a>})}</div></section>}

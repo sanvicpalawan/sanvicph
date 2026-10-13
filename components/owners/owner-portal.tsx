@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { ArrowLeft, ArrowUp, ArrowDown, Upload, Trash2, ShieldCheck, Mail, LogOut, MapPin } from 'lucide-react';
 import LocationMapEditor from '@/components/admin/location-map-editor';
@@ -8,32 +9,33 @@ import './owners.css';
 
 type DirectoryPlace = Pick<OwnerPlace,'id'|'name'|'barangay'|'type'|'display_latitude'|'display_longitude'>;
 type Data = { email:string; places:OwnerPlace[]; directory:DirectoryPlace[]; requests:OwnerRequest[]; media:OwnerAsset[] };
-type Api = (path:string, body?:unknown, method?:string)=>Promise<any>; // API responses are validated on the server.
+type Api = <T = Record<string, unknown>>(path:string, body?:unknown, method?:string)=>Promise<T>; // API responses are validated on the server.
+type UploadTicket = { id:string; path:string; token:string };
 const empty:Data = {email:'',places:[],directory:[],requests:[],media:[]};
 
 export default function OwnerPortal({url,apiKey,openMode=false}:{url:string;apiKey:string;openMode?:boolean}) {
   const client=useMemo(()=>url&&apiKey?createClient(url,apiKey):null,[url,apiKey]);
-  const [session,setSession]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[email,setEmail]=useState(''),[message,setMessage]=useState(''),[data,setData]=useState<Data>(empty),[placeId,setPlaceId]=useState(''),[query,setQuery]=useState('');
+  const [authSession,setAuthSession]=useState(false),[authLoading,setAuthLoading]=useState(true),[busy,setBusy]=useState(false),[email,setEmail]=useState(''),[message,setMessage]=useState(''),[data,setData]=useState<Data>(empty),[placeId,setPlaceId]=useState(''),[query,setQuery]=useState('');
+  const session=openMode||authSession;const loading=!openMode&&!!client&&authLoading;
   const api:Api=async(path,body,method='POST')=>{
     const token=(await client?.auth.getSession())?.data.session?.access_token;
     const response=await fetch(path,{method:body===undefined?'GET':method,headers:{Authorization:`Bearer ${token||''}`,...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});
     const result=await response.json();if(!response.ok)throw new Error(result.error||'Request failed.');return result;
   };
-  const reload=async()=>{const next=await api('/api/owners');setData(next);};
+  const reload=async()=>{const next=await api<Data>('/api/owners');setData(next);};
   const run=async(action:()=>Promise<void>)=>{setBusy(true);setMessage('');try{await action();}catch(e){setMessage(e instanceof Error?e.message:'Unable to complete this request.');}finally{setBusy(false);}};
+  useEffect(()=>{let active=true;Promise.resolve().then(()=>{if(active)setPlaceId(new URLSearchParams(location.search).get('place')||'')});return()=>{active=false}},[]); // Read the deep link after mount: location is client-only, and initial state must match SSR.
   useEffect(()=>{
-    setPlaceId(new URLSearchParams(location.search).get('place')||'');
-    if(openMode){setSession(true);setLoading(false);return;}
-    if(!client){setLoading(false);return;}
-    const {data:listener}=client.auth.onAuthStateChange((_event,s)=>{setSession(Boolean(s));setLoading(false);});
+    if(openMode||!client)return;
+    const {data:listener}=client.auth.onAuthStateChange((_event,s)=>{setAuthSession(Boolean(s));setAuthLoading(false);});
     return()=>listener.subscription.unsubscribe();
   },[client,openMode]);
-  useEffect(()=>{if(session)void run(reload);else setData(empty);},[session]); // Fetch only after Supabase has established the session.
+  useEffect(()=>{let active=true;if(session){api<Data>('/api/owners').then(next=>{if(active)setData(next)}).catch(e=>{if(active)setMessage(e instanceof Error?e.message:'Unable to complete this request.')});}else{Promise.resolve().then(()=>{if(active)setData(empty)});}return()=>{active=false}},[session]); // Fetch only after Supabase has established the session.
   const select=(id:string)=>{setPlaceId(id);history.replaceState(null,'',`/owners?place=${encodeURIComponent(id)}`);};
   const owned=data.places.find(p=>p.id===placeId);
   const locationInfo=owned||data.directory.find(p=>p.id===placeId);
   const relevant=data.requests.filter(r=>r.place_id===placeId);
-  return <main className="owner-shell"><header className="owner-header"><a href="/" aria-label="SANVIC home"><img src="/sanvic-logo.png" alt="SANVIC" width="180" height="24"/></a><a href={placeId?`/#place/${encodeURIComponent(placeId)}`:'/#explore'}><ArrowLeft size={17}/>Back to map</a>{session&&!openMode&&<button onClick={()=>run(async()=>{await client!.auth.signOut();setSession(false);})}><LogOut size={17}/>Sign out</button>}</header>
+  return <main className="owner-shell"><header className="owner-header"><Link href="/" aria-label="SANVIC home"><img src="/sanvic-logo.png" alt="SANVIC" width="180" height="24"/></Link><a href={placeId?`/#place/${encodeURIComponent(placeId)}`:'/#explore'}><ArrowLeft size={17}/>Back to map</a>{session&&!openMode&&<button onClick={()=>run(async()=>{await client!.auth.signOut();setAuthSession(false);})}><LogOut size={17}/>Sign out</button>}</header>
     <div className="owner-heading"><p className="eyebrow">SANVIC · Business owners</p><h1>{session?(openMode?'Open location editor':'My locations'):'Your place. Your story.'}</h1><p>{openMode?'Temporary build access is open. Choose any location and submit its complete profile, photos and videos for admin review.':'Claim your location and keep its details up to date. Profile management is free.'}</p></div>
     {message&&<p className="owner-message" role="status">{message}</p>}
     {loading?<p role="status">Opening your account…</p>:!client?<section className="owner-panel"><h2>Owner sign-in is being configured.</h2><a href={`mailto:${CONTACT_EMAIL}`}>Contact {CONTACT_EMAIL}</a></section>:!session?<form className="owner-panel owner-login" onSubmit={e=>{e.preventDefault();run(async()=>{const {error}=await client.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:`${location.origin}/owners${placeId?`?place=${encodeURIComponent(placeId)}`:''}`}});if(error)throw error;setMessage('Check your email for the secure sign-in link. Open it to return here.');});}}><ShieldCheck/><h2>Sign in to claim or manage</h2><p>Email sign-in identifies your account. Ownership is checked separately by SANVIC.</p><label>Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><button className="owner-primary" disabled={busy}>Email me a sign-in link</button><a href={`mailto:${CONTACT_EMAIL}`}>Need help? Contact us</a></form>:<div className="owner-layout">
@@ -53,7 +55,7 @@ function UploadPicker({placeId,purpose,client,api,onUploaded}:{placeId:string;pu
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false);
   return <div className="owner-upload"><label><Upload size={18}/>{purpose==='gallery'?'Add photos / videos from device':'Attach images or PDF from device'}<input type="file" multiple accept={purpose==='gallery'?'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime':'image/jpeg,image/png,image/webp,application/pdf'} disabled={busy} onChange={async e=>{
     const files=Array.from(e.target.files||[]);e.target.value='';if(!files.length)return;setBusy(true);const ids:string[]=[];let errorMessage='';
-    try{for(let i=0;i<files.length;i++){const file=files[i];setStatus(`Uploading ${i+1} of ${files.length}: ${file.name}`);const ticket=await api('/api/owners/uploads',{placeId,purpose,filename:file.name,contentType:file.type,size:file.size});
+    try{for(let i=0;i<files.length;i++){const file=files[i];setStatus(`Uploading ${i+1} of ${files.length}: ${file.name}`);const ticket=await api<UploadTicket>('/api/owners/uploads',{placeId,purpose,filename:file.name,contentType:file.type,size:file.size});
       const {error}=await client.storage.from(OWNER_BUCKET).uploadToSignedUrl(ticket.path,ticket.token,file,{contentType:file.type});if(error)throw error;
       await api('/api/owners/uploads',{id:ticket.id},'PATCH');ids.push(ticket.id);}}
     catch(e){errorMessage=e instanceof Error?e.message:'Upload failed. You can retry.';}
